@@ -14,8 +14,9 @@ from models.graspnet import GraspNet, pred_decode
 from dataset.graspnet_dataset import GraspNetDataset
 from utils.collision_detector import ModelFreeCollisionDetector
 from utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
-from ord_helpers import base_to_camera, camera_to_base
-from calibration_helpers import get_intrinsics_matrix
+from utils.ord_helpers import base_to_camera, camera_to_base
+from utils.image_helpers import KinectCamera
+from utils.calibration_helpers import get_intrinsics_matrix
 from RTIF.HAPI import HAPI
 
 # robot ip address
@@ -221,7 +222,6 @@ if __name__ == '__main__':
         data_dir = 'doc/example_data'
         grasps = demo(data_dir, show_figure=False)
     elif cfgs.source == 'camera':
-        from image_helpers import KinectCamera
         grasps = demo_camera(show_figure=True)
 
     # get ord
