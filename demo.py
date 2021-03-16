@@ -1,7 +1,3 @@
-""" Demo to show prediction results.
-    Author: chenxi-wang
-"""
-
 import os
 import sys
 import numpy as np
@@ -9,17 +5,11 @@ import open3d as o3d
 import argparse
 import importlib
 import scipy.io as scio
+import torch
+
 from PIL import Image
 from matplotlib import pyplot as plt
-
-import torch
 from graspnetAPI import GraspGroup
-
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(ROOT_DIR, 'models'))
-sys.path.append(os.path.join(ROOT_DIR, 'dataset'))
-sys.path.append(os.path.join(ROOT_DIR, 'utils'))
-
 from models.graspnet import GraspNet, pred_decode
 from dataset.graspnet_dataset import GraspNetDataset
 from utils.collision_detector import ModelFreeCollisionDetector
@@ -27,11 +17,8 @@ from utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
 from ord_helpers import base_to_camera, camera_to_base
 from calibration_helpers import get_intrinsics_matrix
 
-
 parser = argparse.ArgumentParser()
-parser.add_argument('--source',
-                    required=True,
-                    help='Data source')
+parser.add_argument('--source', required=True, help='Data source')
 parser.add_argument('--checkpoint_path',
                     required=True,
                     help='Model checkpoint path')
@@ -108,8 +95,7 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
                                                     organized=True)
     # get mask
     try:
-        workspace_mask = np.array(
-            Image.open('./utils/mask_1.png'))
+        workspace_mask = np.array(Image.open('./utils/mask_1.png'))
     except Exception:
         workspace_mask = np.ones(np.shape(depth), dtype=bool)
 
@@ -237,4 +223,3 @@ if __name__ == '__main__':
 
     ord_in_base = camera_to_base(ord_in_camera)
     print(ord_in_base)
-
