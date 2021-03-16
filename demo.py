@@ -20,6 +20,7 @@ from utils.image_helpers import KinectCamera
 from utils.calibration_helpers import get_intrinsics_matrix
 from RTIF.HAPI import HAPI
 from RTIF.LowLevel.quaternion import from_matrix_to_q
+from gripper_helpers import open_gripper, close_gripper, activate_gripper
 
 # robot ip address
 IP_ADDRESS = '101.6.68.228'
@@ -231,6 +232,8 @@ if __name__ == '__main__':
         while not robot_movement_controller.isLastMovementEnd():
             time.sleep(0.5)
         time.sleep(2)
+        activate_gripper()
+        open_gripper()
 
     # get grasps
     if cfgs.source == 'file':
@@ -258,7 +261,7 @@ if __name__ == '__main__':
     print(gripper_ori)
     gripper = final_grasp.to_open3d_geometry()
     o3d.visualization.draw_geometries([cloud, gripper])
-    if final_grasps[0].score > 0.4:
+    if final_grasps[0].score > 0.15:
         # ord transform
         ord_in_camera = final_grasp.translation
         print(ord_in_camera)
@@ -273,4 +276,11 @@ if __name__ == '__main__':
             robot_movement_controller.MoveEndPointToPosition(pos=ord_in_base, a=1.2, v=0.1, t=None)
             while not robot_movement_controller.isLastMovementEnd():
                 time.sleep(0.5)
-            time.sleep(2)
+            time.sleep(1)
+
+            close_gripper()
+            robot_movement_controller.MoveEndPointToPosition(pos=[-0.05136441, -0.4219078, 0.35249886], rotation=[0.00389084, -0.06481626, 0.9939224, -0.08889267], a=1.2, v=0.1, t=None)
+            while not robot_movement_controller.isLastMovementEnd():
+                time.sleep(0.5)
+            time.sleep(1)
+            open_gripper()
