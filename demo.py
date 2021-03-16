@@ -10,7 +10,6 @@ import argparse
 import importlib
 import scipy.io as scio
 from PIL import Image
-from get_image import KinectCamera
 from matplotlib import pyplot as plt
 
 import torch
@@ -21,12 +20,16 @@ sys.path.append(os.path.join(ROOT_DIR, 'models'))
 sys.path.append(os.path.join(ROOT_DIR, 'dataset'))
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 
-from graspnet import GraspNet, pred_decode
-from graspnet_dataset import GraspNetDataset
-from collision_detector import ModelFreeCollisionDetector
-from data_utils import CameraInfo, create_point_cloud_from_depth_image
+from models.graspnet import GraspNet, pred_decode
+from dataset.graspnet_dataset import GraspNetDataset
+from utils.collision_detector import ModelFreeCollisionDetector
+from utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
+from ord_helpers import base_to_camera, camera_to_base
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--source',
+                    required=True,
+                    help='Data source')
 parser.add_argument('--checkpoint_path',
                     required=True,
                     help='Model checkpoint path')
@@ -85,14 +88,15 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
                              dtype=np.float32) / 255.0
         if depth is None:
             depth = np.array(Image.open(os.path.join(data_dir, 'depth.png')))
-        # print(np.shape(color), np.shape(depth))
-        intrinsic = [[613.12, 0, 459.70],[0, 638.34, 366.408],[0, 0, 1]]
-        factor_depth = [[1000]]
-        # meta = scio.loadmat(os.path.join(data_dir, 'meta.mat'))
-        # intrinsic = meta['intrinsic_matrix']
-        # factor_depth = meta['factor_depth']
-        # print(intrinsic)
-        # print(factor_depth)
+
+        # 读取内参矩阵或预先给定
+        if cfgs.source == 'file':
+            meta = scio.loadmat(os.path.join(data_dir, 'meta.mat'))
+            intrinsic = meta['intrinsic_matrix']
+            factor_depth = meta['factor_depth']
+        else:
+            intrinsic = [[613.12, 0, 459.70],[0, 638.34, 366.408],[0, 0, 1]]
+            factor_depth = [[1000]]
 
         # generate cloud
         camera = CameraInfo(1280.0, 720.0, intrinsic[0][0], intrinsic[1][1],
@@ -103,14 +107,12 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
     # get mask
     try:
         workspace_mask = np.array(
-            Image.open('mask_1.png'))
+            Image.open('./utils/mask_1.png'))
     except Exception:
         workspace_mask = np.ones(np.shape(depth), dtype=bool)
-    # print(np.shape(workspace_mask), np.shape(depth))
-    # print(type(workspace_mask[0, 0]))
+
     # get valid points
     mask = (workspace_mask & (depth > 0))
-    # print(np.shape(mask))
     cloud_masked = cloud[mask]
     color_masked = color[mask]
 
@@ -127,8 +129,7 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
         idxs = np.concatenate([idxs1, idxs2], axis=0)
     cloud_sampled = cloud_masked[idxs]
     color_sampled = color_masked[idxs]
-    print('cloud and color shape:', np.shape(cloud), np.shape(color))
-    # print(np.shape(cloud_sampled), np.shape(color_sampled))
+
     # convert data
     cloud = o3d.geometry.PointCloud()
     cloud.points = o3d.utility.Vector3dVector(cloud_masked.astype(np.float32))
@@ -171,41 +172,67 @@ def vis_grasps(gg, cloud, count=10):
     o3d.visualization.draw_geometries([cloud, *grippers])
 
 
-def demo(data_dir):
+def demo(data_dir, show_figure=False):
     net = get_net()
     end_points, cloud = get_and_process_data(data_dir)
     gg = get_grasps(net, end_points)
     print(np.shape(cloud.points))
     if cfgs.collision_thresh > 0:
         gg = collision_detection(gg, np.array(cloud.points))
-    vis_grasps(gg, cloud)
+    if show_figure:
+        vis_grasps(gg, cloud, count=1)
+    return gg
 
 
-def demo_camera():
+def demo_camera(show_figure=False):
     # get image
     print('-' * 20 + 'starting camera' + '-' * 20)
     camera = KinectCamera()
     # camera.show_image()
     image_rgb, image_depth = camera.get_image()
     pointcloud = camera.get_pointcloud()
-    print(np.shape(image_rgb), np.shape(image_depth))
     print('-' * 20 + 'image get' + '-' * 20)
+
     # get net
     net = get_net()
     print('-' * 20 + 'network get' + '-' * 20)
+
+    # process data
     end_points, cloud = get_and_process_data(color=image_rgb / 255.0,
                                              depth=image_depth)
     print('-' * 20 + 'image processed' + '-' * 20)
+
+    # get grasps
     gg = get_grasps(net, end_points)
     print('-' * 20 + 'collision detecting' + '-' * 20)
-    print(np.shape(cloud.points))
+
+    # collision_detection
     if cfgs.collision_thresh > 0:
         gg = collision_detection(gg, np.array(cloud.points))
-    print('-' * 20 + 'grasps get' + '-' * 20)
-    vis_grasps(gg, cloud, count=20)
+    print('-' * 20 + 'final grasps get' + '-' * 20)
+
+    if show_figure:
+        vis_grasps(gg, cloud, count=20)
+    return gg
 
 
 if __name__ == '__main__':
-    # data_dir = 'doc/example_data'
-    # demo(data_dir)
-    demo_camera()
+    # get grasps
+    if cfgs.source == 'file':
+        data_dir = 'doc/example_data'
+        grasps = demo(data_dir, show_figure=False)
+    elif cfgs.source == 'camera':
+        from image_helpers import KinectCamera
+        grasps = demo_camera()
+
+    # get ord
+    grasps.sort_by_score()
+    final_grasp = grasps[0]
+
+    # ord transform
+    ord_in_camera = final_grasp.translation
+    print(ord_in_camera)
+
+    ord_in_base = camera_to_base(ord_in_camera)
+    print(ord_in_base)
+
