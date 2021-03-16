@@ -15,7 +15,7 @@ class KinectCamera():
         self.k4aviewer.start()
         capture = self.k4aviewer.get_capture()
         self.k4aviewer.stop()
-        img_color = capture.color
+        img_color = capture.color / 255.0
         img_depth = capture.transformed_depth
         return img_color[:, :, 2::-1], img_depth
 
@@ -24,7 +24,7 @@ class KinectCamera():
         self.k4aviewer.start()
         capture = self.k4aviewer.get_capture()
         self.k4aviewer.stop()
-        return capture.transformed_depth_point_cloud
+        return capture.transformed_depth_point_cloud / 1000.0
 
     def save_calibration(self, path):
         self.k4aviewer.start()

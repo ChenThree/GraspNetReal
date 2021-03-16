@@ -6,6 +6,7 @@ import argparse
 import importlib
 import scipy.io as scio
 import torch
+import time
 
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -18,6 +19,7 @@ from utils.ord_helpers import base_to_camera, camera_to_base
 from utils.image_helpers import KinectCamera
 from utils.calibration_helpers import get_intrinsics_matrix
 from RTIF.HAPI import HAPI
+from RTIF.LowLevel.quaternion import from_matrix_to_q
 
 # robot ip address
 IP_ADDRESS = '101.6.68.228'
@@ -26,8 +28,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--source', required=True, help='Data source')
 parser.add_argument(
     '--move_robot',
-    type=bool,
-    default=False,
+    action='store_true',
     help=
     'Whether move robot'
 )
@@ -97,7 +98,7 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
             factor_depth = meta['factor_depth']
         else:
             intrinsic = get_intrinsics_matrix()
-            factor_depth = [[1000]]
+            factor_depth = [[1000.0]]
 
         # generate cloud
         camera = CameraInfo(1280.0, 720.0, intrinsic[0][0], intrinsic[1][1],
@@ -132,14 +133,15 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
 
     # convert data
     cloud = o3d.geometry.PointCloud()
-    cloud.points = o3d.utility.Vector3dVector(cloud_masked.astype(np.float32))
-    cloud.colors = o3d.utility.Vector3dVector(color_masked.astype(np.float32))
+    cloud.points = o3d.utility.Vector3dVector(cloud_sampled.astype(np.float32))
+    cloud.colors = o3d.utility.Vector3dVector(color_sampled.astype(np.float32))
+
     end_points = dict()
     cloud_sampled = torch.from_numpy(cloud_sampled[np.newaxis].astype(
         np.float32))
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     cloud_sampled = cloud_sampled.to(device)
-    end_points['point_clouds'] = cloud_sampled
+    end_points['point_clouds'] = cloud_sampled 
     end_points['cloud_colors'] = color_sampled
 
     return end_points, cloud
@@ -174,13 +176,13 @@ def vis_grasps(gg, cloud, count=10):
 
 def demo(data_dir, show_figure=False):
     net = get_net()
-    end_points, cloud = get_and_process_data(data_dir)
+    end_points, cloud = get_and_process_data(data_dir=data_dir)
     gg = get_grasps(net, end_points)
-    print(np.shape(cloud.points))
+
     if cfgs.collision_thresh > 0:
         gg = collision_detection(gg, np.array(cloud.points))
     if show_figure:
-        vis_grasps(gg, cloud, count=1)
+        vis_grasps(gg, cloud)
     return gg
 
 
@@ -191,6 +193,7 @@ def demo_camera(show_figure=False):
     # camera.show_image()
     image_rgb, image_depth = camera.get_image()
     pointcloud = camera.get_pointcloud()
+
     print('-' * 20 + 'image get' + '-' * 20)
 
     # get net
@@ -198,8 +201,9 @@ def demo_camera(show_figure=False):
     print('-' * 20 + 'network get' + '-' * 20)
 
     # process data
-    end_points, cloud = get_and_process_data(color=image_rgb / 255.0,
-                                             depth=image_depth)
+    end_points, cloud = get_and_process_data(color=image_rgb,
+                                             depth=image_depth,
+                                             cloud=pointcloud)
     print('-' * 20 + 'image processed' + '-' * 20)
 
     # get grasps
@@ -212,33 +216,61 @@ def demo_camera(show_figure=False):
     print('-' * 20 + 'final grasps get' + '-' * 20)
 
     if show_figure:
-        vis_grasps(gg, cloud, count=20)
-    return gg
+        vis_grasps(gg, cloud)
+    return cloud, gg
 
 
 if __name__ == '__main__':
-    # get grasps
-    if cfgs.source == 'file':
-        data_dir = 'doc/example_data'
-        grasps = demo(data_dir, show_figure=False)
-    elif cfgs.source == 'camera':
-        grasps = demo_camera(show_figure=True)
-
-    # get ord
-    grasps.sort_by_score()
-    final_grasp = grasps[0]
-
-    # ord transform
-    ord_in_camera = final_grasp.translation
-    print(ord_in_camera)
-
-    ord_in_base = camera_to_base(ord_in_camera)
-    print(ord_in_base)
 
     # move ur robot
     if cfgs.move_robot is True:
         robot_movement_controller = HAPI(IP_ADDRESS)
         # set origin
-        # robot_movement_controller.set_coordinate_origin((0.13261, -0.49141, 0.32612))
-        # robot_movement_controller.MoveEndPointToPosition(pos=ord_in_base, a=1.2, v=0.5, t=None)
-        robot_movement_controller.MoveEndPointToPosition(pos=np.array([0, 0.4, 0.6]), a=1.2, v=0.5, t=None)
+        print('move to start point')
+        robot_movement_controller.MoveEndPointToPosition(pos=[-0.05136441, -0.4219078, 0.35249886], rotation=[0.00389084, -0.06481626, 0.9939224, -0.08889267], a=1.2, v=0.1, t=None)
+        while not robot_movement_controller.isLastMovementEnd():
+            time.sleep(0.5)
+        time.sleep(2)
+
+    # get grasps
+    if cfgs.source == 'file':
+        data_dir = 'doc/example_data'
+        grasps = demo(data_dir, show_figure=True)
+    elif cfgs.source == 'camera':
+        cloud, grasps = demo_camera(show_figure=True)
+
+    # get ord
+    grasps.sort_by_score()
+    final_grasps = []
+    for grasp in grasps:
+        ord_in_camera = grasp.translation
+        ord_in_base = camera_to_base(ord_in_camera)
+        if ord_in_base[2] > 0.05 and ord_in_base[2] < 0.5:
+            final_grasps.append(grasp)
+
+    print('grasp count', len(final_grasps))
+    
+    final_grasp = final_grasps[0]
+    print('score', final_grasp.score)
+    print('rotation matrix')
+    print(final_grasp.rotation_matrix)
+    gripper_ori = from_matrix_to_q(final_grasp.rotation_matrix)
+    print(gripper_ori)
+    gripper = final_grasp.to_open3d_geometry()
+    o3d.visualization.draw_geometries([cloud, gripper])
+    if final_grasps[0].score > 0.4:
+        # ord transform
+        ord_in_camera = final_grasp.translation
+        print(ord_in_camera)
+
+        ord_in_base = camera_to_base(ord_in_camera)
+        print(ord_in_base)
+
+        if cfgs.move_robot:
+            print('move to object')
+            # robot_movement_controller.set_coordinate_origin((0.13261, -0.49141, 0.32612))
+            robot_movement_controller.MoveEndPointToPosition(rotation=gripper_ori, a=1.2, v=0.1, t=None)
+            robot_movement_controller.MoveEndPointToPosition(pos=ord_in_base, a=1.2, v=0.1, t=None)
+            while not robot_movement_controller.isLastMovementEnd():
+                time.sleep(0.5)
+            time.sleep(2)

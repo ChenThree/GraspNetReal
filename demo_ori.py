@@ -12,6 +12,8 @@ def main():
 
     logging.getLogger().setLevel(logging.INFO)
     api = HAPI(IP)
+    print(api.GetCurrentEndPos())
+    return
     print('init ok')
     api.set_coordinate_origin((0.13261, -0.49141, 0.32612))
     print('ori set ok')

@@ -122,11 +122,11 @@ class RTIF(object):
         # cmd_str = function + '\n'
         # byt = cmd_str.encode(encoding='utf-8')
         # self.__sock.send(byt)
-        self.__sock.send(function + '\n')
+        self.__sock.send(bytes(function + '\n', encoding='utf-8'))
         self.disconnect()
 
     def __recv(self):
-        self.__buf = ''
+        self.__buf = b''
 
         while 1:
             self.__buf += self.__sock.recv(4096)
