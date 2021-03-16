@@ -16,9 +16,20 @@ from utils.collision_detector import ModelFreeCollisionDetector
 from utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
 from ord_helpers import base_to_camera, camera_to_base
 from calibration_helpers import get_intrinsics_matrix
+from RTIF.HAPI import HAPI
+
+# robot ip address
+IP_ADDRESS = '101.6.68.228'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source', required=True, help='Data source')
+parser.add_argument(
+    '--move_robot',
+    type=bool,
+    default=False,
+    help=
+    'Whether move robot'
+)
 parser.add_argument('--checkpoint_path',
                     required=True,
                     help='Model checkpoint path')
@@ -223,3 +234,11 @@ if __name__ == '__main__':
 
     ord_in_base = camera_to_base(ord_in_camera)
     print(ord_in_base)
+
+    # move ur robot
+    if cfgs.move_robot is True:
+        robot_movement_controller = HAPI(IP_ADDRESS)
+        # set origin
+        # robot_movement_controller.set_coordinate_origin((0.13261, -0.49141, 0.32612))
+        # robot_movement_controller.MoveEndPointToPosition(pos=ord_in_base, a=1.2, v=0.5, t=None)
+        robot_movement_controller.MoveEndPointToPosition(pos=np.array([0, 0.4, 0.6]), a=1.2, v=0.5, t=None)
