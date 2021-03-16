@@ -25,6 +25,8 @@ from dataset.graspnet_dataset import GraspNetDataset
 from utils.collision_detector import ModelFreeCollisionDetector
 from utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
 from ord_helpers import base_to_camera, camera_to_base
+from calibration_helpers import get_intrinsics_matrix
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--source',
@@ -95,7 +97,7 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
             intrinsic = meta['intrinsic_matrix']
             factor_depth = meta['factor_depth']
         else:
-            intrinsic = [[613.12, 0, 459.70],[0, 638.34, 366.408],[0, 0, 1]]
+            intrinsic = get_intrinsics_matrix()
             factor_depth = [[1000]]
 
         # generate cloud
