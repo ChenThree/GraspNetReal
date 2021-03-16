@@ -223,7 +223,7 @@ if __name__ == '__main__':
         grasps = demo(data_dir, show_figure=False)
     elif cfgs.source == 'camera':
         from image_helpers import KinectCamera
-        grasps = demo_camera()
+        grasps = demo_camera(show_figure=True)
 
     # get ord
     grasps.sort_by_score()

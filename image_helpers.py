@@ -27,7 +27,9 @@ class KinectCamera():
         return capture.transformed_depth_point_cloud
 
     def save_calibration(self, path):
-        return self.k4aviewer.save_calibration_json(path)
+        self.k4aviewer.start()
+        self.k4aviewer.save_calibration_json(path)
+        self.k4aviewer.stop()
 
     def show_image(self):
         # get image
@@ -41,13 +43,13 @@ class KinectCamera():
 
 
 if __name__ == '__main__':
-    # camera = KinectCamera()
+    camera = KinectCamera()
     # _, depth = camera.get_image()
-    depth = np.array(Image.open('mask.png'))
-    print(depth[0,0], depth[360,640], np.shape(depth))
-    depth = (depth > 128)
-    print(depth[0,0], depth[360,640])
-    depth = Image.fromarray(depth)
-    depth.save('mask_1.png')
-    # print(camera.save_calibration('calibration.json'))
+    # depth = np.array(Image.open('mask.png'))
+    # print(depth[0,0], depth[360,640], np.shape(depth))
+    # depth = (depth > 128)
+    # print(depth[0,0], depth[360,640])
+    # depth = Image.fromarray(depth)
+    # depth.save('mask_1.png')
+    camera.save_calibration('calibration.json')
     # print(np.shape(camera.get_pointcloud()))
