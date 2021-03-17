@@ -3,12 +3,12 @@ import serial
 import time
 
 # get gripper port
-from GraspNetToolBox.config import GRIPPER_PORT
-
+# from GraspNetToolBox.config import GRIPPER_PORT
+GRIPPER_PORT = '/dev/ttyUSB0'
 
 class GripperController():
 
-    def __init__(self, port):
+    def __init__(self):
         self.ser = serial.Serial(
             port=GRIPPER_PORT,
             baudrate=115200,
@@ -18,6 +18,7 @@ class GripperController():
             bytesize=serial.EIGHTBITS)
 
     def activate_gripper(self):
+        print('activate gripper')
         # send activate command
         self.ser.write(
             b'\x09\x10\x03\xE8\x00\x03\x06\x00\x00\x00\x00\x00\x00\x73\x30')
@@ -25,7 +26,7 @@ class GripperController():
         print(data_raw)
         data = binascii.hexlify(data_raw)
         print('Response 1 ', data)
-        time.sleep(0.01)
+        time.sleep(1)
         # send
         self.ser.write(b'\x09\x03\x07\xD0\x00\x01\x85\xCF')
         data_raw = self.ser.readline()
@@ -42,7 +43,7 @@ class GripperController():
         data_raw = self.ser.readline()
         print(data_raw)
         data = binascii.hexlify(data_raw)
-        print('Response 3 ', data)
+        print('Response 1 ', data)
         time.sleep(2)
 
     def open_gripper(self):
@@ -53,5 +54,10 @@ class GripperController():
         data_raw = self.ser.readline()
         print(data_raw)
         data = binascii.hexlify(data_raw)
-        print('Response 4 ', data)
+        print('Response 1 ', data)
         time.sleep(2)
+
+if __name__ == '__main__':
+    gripper = GripperController()
+    gripper.activate_gripper()
+    gripper.close_gripper()

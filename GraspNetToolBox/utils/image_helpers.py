@@ -18,10 +18,13 @@ class RealsenseCamera():
         # convert rgb to np.array
         frame_rgb = frames.get_color_frame()
         image_rgb = np.asanyarray(frame_rgb.get_data())
-        color_image = cv.cvtColor(color_image, cv.COLOR_RGB2BGR)
+        image_rgb = cv.cvtColor(image_rgb, cv.COLOR_RGB2BGR)
         # convert depth to np.array
-        image_depth = frames.get_depth_frame()
+        frame_depth = frames.get_depth_frame()
+        image_depth = np.asanyarray(frame_depth.get_data())
+        image_depth = cv.cvtColor(image_depth, cv.COLOR_RGB2BGR)
         self.pipeline.stop()
+        return image_rgb, image_depth
 
 
 class KinectCamera():
@@ -64,4 +67,10 @@ class KinectCamera():
 
 if __name__ == '__main__':
     camera = RealsenseCamera()
-    camera.get_image()
+    image_rgb, image_depth = camera.get_image()
+    plt.imshow(image_rgb)
+    plt.show()
+    plt.imshow(image_depth)
+    plt.show()
+    print(np.shape(image_rgb))
+    print(np.shape(image_depth))

@@ -229,6 +229,8 @@ if __name__ == '__main__':
         robot_controller.reset_robot()
         # activate gripper
         gripper_controller.activate_gripper()
+        # open gripper
+        gripper_controller.open_gripper()
 
     # get grasps
     if cfgs.source == 'file':
@@ -243,11 +245,11 @@ if __name__ == '__main__':
     for grasp in grasps:
         ord_in_camera = grasp.translation
         ord_in_base = camera_to_base(ord_in_camera)
-        # filterde grasps that is too low
-        if ord_in_base[2] > 0.05 and ord_in_base[2] < 0.5:
+        # filter grasps that is too low
+        if ord_in_base[2] > 0.08 and ord_in_base[2] < 0.5:
             filtered_grasps.append(grasp)
 
-    print('grasp count', len(filtered_grasps))
+    print('grasp count:', len(filtered_grasps))
 
     # best grasp
     best_grasp = filtered_grasps[0]
@@ -259,7 +261,7 @@ if __name__ == '__main__':
     o3d.visualization.draw_geometries([cloud, gripper])
 
     # execute real grasp if score is high enough
-    if best_grasp.score > 0.15 and cfgs.move_robot:
+    if best_grasp.score > 0.2 and cfgs.move_robot:
         # ord transform
         ord_in_camera = best_grasp.translation
         ord_in_base = camera_to_base(ord_in_camera)
