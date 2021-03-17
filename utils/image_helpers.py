@@ -1,8 +1,27 @@
 import numpy as np
 import cv2 as cv
+import pyrealsense2 as realsense
+
 from pyk4a import PyK4A
 from matplotlib import pyplot as plt
 from PIL import Image
+
+
+class RealsenseCamera():
+    def __init__(self):
+        self.pipeline = realsense.pipeline()
+
+    def get_image(self):
+        self.pipeline.start()
+        # get frame
+        frames = self.pipeline.wait_for_frames()
+        # convert rgb to np.array
+        frame_rgb = frames.get_color_frame()
+        image_rgb = np.asanyarray(frame_rgb.get_data())
+        color_image = cv.cvtColor(color_image, cv.COLOR_RGB2BGR)
+        # convert depth to np.array
+        image_depth = frames.get_depth_frame()
+        self.pipeline.stop()
 
 
 class KinectCamera():
@@ -43,13 +62,5 @@ class KinectCamera():
 
 
 if __name__ == '__main__':
-    camera = KinectCamera()
-    # _, depth = camera.get_image()
-    # depth = np.array(Image.open('mask.png'))
-    # print(depth[0,0], depth[360,640], np.shape(depth))
-    # depth = (depth > 128)
-    # print(depth[0,0], depth[360,640])
-    # depth = Image.fromarray(depth)
-    # depth.save('mask_1.png')
-    camera.save_calibration('calibration.json')
-    # print(np.shape(camera.get_pointcloud()))
+    camera = RealsenseCamera()
+    camera.get_image()
