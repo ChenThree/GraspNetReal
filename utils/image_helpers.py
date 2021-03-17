@@ -1,13 +1,13 @@
-import numpy as np
 import cv2 as cv
+import numpy as np
 import pyrealsense2 as realsense
-
-from pyk4a import PyK4A
 from matplotlib import pyplot as plt
 from PIL import Image
+from pyk4a import PyK4A
 
 
 class RealsenseCamera():
+
     def __init__(self):
         self.pipeline = realsense.pipeline()
 
@@ -25,6 +25,7 @@ class RealsenseCamera():
 
 
 class KinectCamera():
+
     def __init__(self):
         # Load camera with the default config
         self.k4aviewer = PyK4A()

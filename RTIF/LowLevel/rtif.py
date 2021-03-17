@@ -1,6 +1,6 @@
+import socket
 import struct
 from collections import namedtuple
-import socket
 
 DEFAULT_TIMEOUT = 1.0
 
@@ -15,65 +15,91 @@ class ConnectionState:
 
 
 class StateMessageReceiver(object):
+
     @staticmethod
     def unpack(byte_stream):
-        joint_data = namedtuple("vector6d", ("p0", "p1", "p2", "p3", "p4", "p5"))
-        coordinate_data = namedtuple("coordinate6d", ("x", "y", "z", "rx", "ry", "rz"))
-        message = {"Time Step": 0.0,
-                   "Target Joint Positions": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Target Joint Velocities": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Target Joint Accelerations": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Target Joint Currents": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Target Joint Torques": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Actual Joint Positions": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Actual Joint Velocities": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Actual Joint Currents": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Joint Control Currents": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Actual Tool Coordinates": coordinate_data(0., 0., 0., 0., 0., 0.),
-                   "Actual Tool Speed": coordinate_data(0., 0., 0., 0., 0., 0.),
-                   "Generalized Tool Force": coordinate_data(0., 0., 0., 0., 0., 0.),
-                   "Target Tool Coordinates": coordinate_data(0., 0., 0., 0., 0., 0.),
-                   "Target Tool Speed": coordinate_data(0., 0., 0., 0., 0., 0.),
-                   "Digit Input": 0.0,
-                   "Temperature": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Execute Time": 0.0,
-                   "Robot Mode": 0.0,
-                   "Joint Mode": joint_data(0., 0., 0., 0., 0., 0.),
-                   "Safety Mode": 0.0,
-                   }
-        cnt, message["Time Step"] = struct.unpack_from('!Id', byte_stream)
-        bias = 12                       # byte count + time step = 12 byte
+        joint_data = namedtuple('vector6d',
+                                ('p0', 'p1', 'p2', 'p3', 'p4', 'p5'))
+        coordinate_data = namedtuple('coordinate6d',
+                                     ('x', 'y', 'z', 'rx', 'ry', 'rz'))
+        message = {
+            'Time Step': 0.0,
+            'Target Joint Positions': joint_data(0., 0., 0., 0., 0., 0.),
+            'Target Joint Velocities': joint_data(0., 0., 0., 0., 0., 0.),
+            'Target Joint Accelerations': joint_data(0., 0., 0., 0., 0., 0.),
+            'Target Joint Currents': joint_data(0., 0., 0., 0., 0., 0.),
+            'Target Joint Torques': joint_data(0., 0., 0., 0., 0., 0.),
+            'Actual Joint Positions': joint_data(0., 0., 0., 0., 0., 0.),
+            'Actual Joint Velocities': joint_data(0., 0., 0., 0., 0., 0.),
+            'Actual Joint Currents': joint_data(0., 0., 0., 0., 0., 0.),
+            'Joint Control Currents': joint_data(0., 0., 0., 0., 0., 0.),
+            'Actual Tool Coordinates': coordinate_data(0., 0., 0., 0., 0., 0.),
+            'Actual Tool Speed': coordinate_data(0., 0., 0., 0., 0., 0.),
+            'Generalized Tool Force': coordinate_data(0., 0., 0., 0., 0., 0.),
+            'Target Tool Coordinates': coordinate_data(0., 0., 0., 0., 0., 0.),
+            'Target Tool Speed': coordinate_data(0., 0., 0., 0., 0., 0.),
+            'Digit Input': 0.0,
+            'Temperature': joint_data(0., 0., 0., 0., 0., 0.),
+            'Execute Time': 0.0,
+            'Robot Mode': 0.0,
+            'Joint Mode': joint_data(0., 0., 0., 0., 0., 0.),
+            'Safety Mode': 0.0,
+        }
+        cnt, message['Time Step'] = struct.unpack_from('!Id', byte_stream)
+        bias = 12  # byte count + time step = 12 byte
         while 0 < bias < cnt:
             if bias == 12:
-                message["Target Joint Positions"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 0 * 48))
-                message["Target Joint Velocities"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 1 * 48))
-                message["Target Joint Accelerations"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 2 * 48))
-                message["Target Joint Currents"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 3 * 48))
-                message["Target Joint Torques"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 4 * 48))
-                message["Actual Joint Positions"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 5 * 48))
-                message["Actual Joint Velocities"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 6 * 48))
-                message["Actual Joint Currents"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 7 * 48))
-                message["Joint Control Currents"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 8 * 48))  #7->8
-                bias += 9 * 48 
+                message['Target Joint Positions'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 0 * 48))
+                message['Target Joint Velocities'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 1 * 48))
+                message['Target Joint Accelerations'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 2 * 48))
+                message['Target Joint Currents'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 3 * 48))
+                message['Target Joint Torques'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 4 * 48))
+                message['Actual Joint Positions'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 5 * 48))
+                message['Actual Joint Velocities'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 6 * 48))
+                message['Actual Joint Currents'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 7 * 48))
+                message['Joint Control Currents'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream,
+                                        bias + 8 * 48))  #7->8
+                bias += 9 * 48
             elif bias == 444:
-                message["Actual Tool Coordinates"] = coordinate_data(*struct.unpack_from('!6d', byte_stream, bias + 0 * 48))
-                message["Actual Tool Speed"] = coordinate_data(*struct.unpack_from('!6d', byte_stream, bias + 1 * 48))
-                message["Generalized Tool Force"] = coordinate_data(*struct.unpack_from('!6d', byte_stream, bias + 2 * 48))
-                message["Target Tool Coordinates"] = coordinate_data(*struct.unpack_from('!6d', byte_stream, bias + 3 * 48))
-                message["Target Tool Speed"] = coordinate_data(*struct.unpack_from('!6d', byte_stream, bias + 4 * 48))
-                bias += 5 * 48 
+                message['Actual Tool Coordinates'] = coordinate_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 0 * 48))
+                message['Actual Tool Speed'] = coordinate_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 1 * 48))
+                message['Generalized Tool Force'] = coordinate_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 2 * 48))
+                message['Target Tool Coordinates'] = coordinate_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 3 * 48))
+                message['Target Tool Speed'] = coordinate_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 4 * 48))
+                bias += 5 * 48
             elif bias == 684:
-                message["Digit Input"] = struct.unpack_from('!d', byte_stream, bias + 0)
-                message["Temperature"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 8))
-                message["Execute Time"] = struct.unpack_from('!d', byte_stream, bias + 56)
-                message["Robot Mode"] = struct.unpack_from('!d', byte_stream, bias + 72)
-                message["Joint Mode"] = joint_data(*struct.unpack_from('!6d', byte_stream, bias + 80))
-                message["Safety Mode"] = struct.unpack_from('!d', byte_stream, bias + 128)
+                message['Digit Input'] = struct.unpack_from(
+                    '!d', byte_stream, bias + 0)
+                message['Temperature'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 8))
+                message['Execute Time'] = struct.unpack_from(
+                    '!d', byte_stream, bias + 56)
+                message['Robot Mode'] = struct.unpack_from(
+                    '!d', byte_stream, bias + 72)
+                message['Joint Mode'] = joint_data(
+                    *struct.unpack_from('!6d', byte_stream, bias + 80))
+                message['Safety Mode'] = struct.unpack_from(
+                    '!d', byte_stream, bias + 128)
                 bias = -1
         return message, (bias < 0)
 
 
 class RTIF(object):
+
     def __init__(self, hostname):
         self.hostname = hostname
         # 30003
@@ -81,7 +107,7 @@ class RTIF(object):
         self.__conn_state = ConnectionState.DISCONNECTED
         self.__sock = None
         self.__buf = ''
-        
+
     def connect(self):
         if self.__sock:
             return
@@ -104,7 +130,7 @@ class RTIF(object):
             self.__sock.close()
             self.__sock = None
         self.__conn_state = ConnectionState.DISCONNECTED
-        
+
     def is_connected(self):
         return self.__conn_state is not ConnectionState.DISCONNECTED
 
