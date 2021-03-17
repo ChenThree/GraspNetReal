@@ -1,7 +1,6 @@
 import numpy as np
-import time
-
 import RTIF.LowLevel.quaternion as quat
+import time
 from RTIF.API import API
 
 

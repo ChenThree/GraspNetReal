@@ -1,5 +1,6 @@
 import numpy as np
-from GraspNetReal.config import cx, cy, fx, fy, resolution_x, resolution_y
+
+from GraspNetToolBox.config import cx, cy, fx, fy, resolution_x, resolution_y
 
 # inv normalize
 cx *= resolution_x

@@ -18,6 +18,7 @@ sys.path.append(os.path.join(ROOT_DIR, 'utils'))
 
 from utils.label_generation import batch_viewpoint_params_to_matrix, match_grasp_view_and_label, process_grasp_labels
 from utils.loss_utils import GRASP_MAX_TOLERANCE, GRASP_MAX_WIDTH
+
 from .backbone import Pointnet2Backbone
 from .loss import get_loss
 from .modules import ApproachNet, CloudCrop, OperationNet, ToleranceNet

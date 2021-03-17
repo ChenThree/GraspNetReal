@@ -1,8 +1,9 @@
 import time
+
 # get robot ip address
-from GraspNetReal.config import IP_ADDRESS, ROBOT_START_POINT, ROBOT_START_ROTATION
+from GraspNetToolBox.config import IP_ADDRESS, ROBOT_START_POINT, ROBOT_START_ROTATION
 # lower api
-from GraspNetReal.RTIF.HAPI import HAPI
+from GraspNetToolBox.RTIF.HAPI import HAPI
 
 
 class RobotController():

@@ -6,21 +6,23 @@ import scipy.io as scio
 import time
 import torch
 from graspnetAPI import GraspGroup
-# net work
-from GraspNetReal.models.graspnet import GraspNet, pred_decode
-from GraspNetReal.RTIF.LowLevel.quaternion import from_matrix_to_q
-from GraspNetReal.utils.calibration_helpers import get_intrinsics_matrix
-# collision_detector
-from GraspNetReal.utils.collision_detector import ModelFreeCollisionDetector
-# data process tools
-from GraspNetReal.utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
-# gripper control
-from GraspNetReal.utils.gripper_helpers import GripperController
-from GraspNetReal.utils.image_helpers import KinectCamera
-from GraspNetReal.utils.ord_helpers import camera_to_base
-# robot control
-from GraspNetReal.utils.robot_heplers import RobotController
 from PIL import Image
+
+from GraspNetToolBox.config import MASK_IAMGE_PATH
+# network
+from GraspNetToolBox.models.graspnet import GraspNet, pred_decode
+from GraspNetToolBox.RTIF.LowLevel.quaternion import from_matrix_to_q
+from GraspNetToolBox.utils.calibration_helpers import get_intrinsics_matrix
+# collision_detector
+from GraspNetToolBox.utils.collision_detector import ModelFreeCollisionDetector
+# data process tools
+from GraspNetToolBox.utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
+# gripper control
+from GraspNetToolBox.utils.gripper_helpers import GripperController
+from GraspNetToolBox.utils.image_helpers import KinectCamera
+from GraspNetToolBox.utils.ord_helpers import camera_to_base
+# robot control
+from GraspNetToolBox.utils.robot_heplers import RobotController
 
 
 def parse_args():
@@ -104,7 +106,7 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
             depth, camera, organized=True)
     # get mask
     try:
-        workspace_mask = np.array(Image.open('./utils/mask_1.png'))
+        workspace_mask = np.array(Image.open(MASK_IAMGE_PATH))
     except Exception:
         workspace_mask = np.ones(np.shape(depth), dtype=bool)
 
@@ -230,7 +232,7 @@ if __name__ == '__main__':
 
     # get grasps
     if cfgs.source == 'file':
-        data_dir = 'doc/example_data'
+        data_dir = 'GraspNetToolBox/doc/example_data'
         grasps = get_grasp_from_file(data_dir, show_figure=True)
     elif cfgs.source == 'camera':
         cloud, grasps = get_grasp_from_camera(show_figure=True)

@@ -1,6 +1,7 @@
 import numpy as np
+
 # get q and x,y,z from config
-from GraspNetReal.config import qw, qx, qy, qz, x, y, z
+from GraspNetToolBox.config import qw, qx, qy, qz, x, y, z
 
 # get trans matrix
 trans_matrix = np.array([[

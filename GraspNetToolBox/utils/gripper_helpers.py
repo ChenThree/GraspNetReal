@@ -1,8 +1,9 @@
 import binascii
 import serial
 import time
+
 # get gripper port
-from GraspNetReal.config import GRIPPER_PORT
+from GraspNetToolBox.config import GRIPPER_PORT
 
 
 class GripperController():

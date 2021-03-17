@@ -87,7 +87,7 @@ def get_requirements(filename='requirements.txt'):
 if __name__ == '__main__':
     write_version_py()
     setup(
-        name='GraspNetReal',
+        name='GraspNetToolBox',
         version=get_version(),
         description='',
         long_description=readme(),

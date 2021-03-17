@@ -22,3 +22,6 @@ fy = 0.63846969604492188  # 4
 # picture resolution
 resolution_x = 1280
 resolution_y = 720
+
+# grasp mask
+MASK_IAMGE_PATH = './GraspNetToolBox/utils/mask.png'
