@@ -1,8 +1,8 @@
 # robot ip
-IP_ADDRESS = '101.6.68.222'
+IP_ADDRESS = '101.6.70.97'
 # robot initial status
-ROBOT_START_POINT = [-0.05136441, -0.4219078, 0.35249886]
-ROBOT_START_ROTATION = [0.00389084, -0.06481626, 0.9939224, -0.08889267]
+ROBOT_START_POINT = [-0.07566725, -0.2933787, 0.5278667]
+ROBOT_START_ROTATION = [0.1582771, 0.98715806, 0.02128513, 0.0037758]
 
 # gripper port
 GRIPPER_PORT = '/dev/ttyUSB0'
@@ -24,4 +24,5 @@ resolution_x = 1280
 resolution_y = 720
 
 # grasp mask
-MASK_IAMGE_PATH = './GraspNetToolBox/utils/mask.png'
+KINECT_MASK_IAMGE_PATH = './GraspNetToolBox/utils/kinect_mask.png'
+REALSENSE_MASK_IAMGE_PATH = './GraspNetToolBox/utils/realsense_mask.png'

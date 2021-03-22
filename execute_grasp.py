@@ -8,7 +8,7 @@ import torch
 from graspnetAPI import GraspGroup
 from PIL import Image
 
-from GraspNetToolBox.config import MASK_IAMGE_PATH
+from GraspNetToolBox.config import KINECT_MASK_IAMGE_PATH, REALSENSE_MASK_IAMGE_PATH
 # network
 from GraspNetToolBox.models.graspnet import GraspNet, pred_decode
 from GraspNetToolBox.RTIF.LowLevel.quaternion import from_matrix_to_q
@@ -19,8 +19,8 @@ from GraspNetToolBox.utils.collision_detector import ModelFreeCollisionDetector
 from GraspNetToolBox.utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
 # gripper control
 from GraspNetToolBox.utils.gripper_helpers import GripperController
-from GraspNetToolBox.utils.image_helpers import KinectCamera
-from GraspNetToolBox.utils.ord_helpers import camera_to_base
+from GraspNetToolBox.utils.image_helpers import KinectCamera, RealsenseCamera
+from GraspNetToolBox.utils.ord_helpers import ord_camera_to_base, rot_camera_to_base
 # robot control
 from GraspNetToolBox.utils.robot_heplers import RobotController
 
@@ -48,9 +48,14 @@ def parse_args():
     parser.add_argument(
         '--voxel_size',
         type=float,
-        default=0.01,
+        default=0.005,
         help='Voxel Size to process point clouds' +
-        'before collision detection [default: 0.01]')
+        'before collision detection [default: 0.005]')
+    parser.add_argument(
+        '--approach_dist',
+        type=float,
+        default=0.1,
+        help='approach_dist for collision detect default: 0.1]')
     cfgs = parser.parse_args()
     return cfgs
 
@@ -79,7 +84,7 @@ def get_net():
     return net
 
 
-def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
+def get_and_process_data(camera='Kinect', data_dir=None, color=None, depth=None, cloud=None):
     # get cloud if given cloud is None
     if cloud is None:
         # load data
@@ -106,12 +111,16 @@ def get_and_process_data(data_dir=None, color=None, depth=None, cloud=None):
             depth, camera, organized=True)
     # get mask
     try:
-        workspace_mask = np.array(Image.open(MASK_IAMGE_PATH))
+        if camera == 'kinect':
+            workspace_mask = np.array(Image.open(KINECT_MASK_IAMGE_PATH))
+        else:
+            workspace_mask = np.array(Image.open(REALSENSE_MASK_IAMGE_PATH))
     except Exception:
         workspace_mask = np.ones(np.shape(depth), dtype=bool)
 
     # get valid points
     mask = (workspace_mask & (depth > 0))
+    print(np.shape(mask), np.shape(cloud))
     cloud_masked = cloud[mask]
     color_masked = color[mask]
 
@@ -158,12 +167,12 @@ def get_grasps(net, end_points):
 def collision_detection(gg, cloud):
     mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size)
     collision_mask = mfcdetector.detect(
-        gg, approach_dist=0.05, collision_thresh=cfgs.collision_thresh)
+        gg, approach_dist=cfgs.approach_dist, collision_thresh=cfgs.collision_thresh)
     gg = gg[~collision_mask]
     return gg
 
 
-def vis_grasps(gg, cloud, count=10):
+def vis_grasps(gg, cloud, count=50):
     gg.nms()
     gg.sort_by_score()
     gg = gg[:count]
@@ -183,10 +192,13 @@ def get_grasp_from_file(data_dir, show_figure=False):
     return gg
 
 
-def get_grasp_from_camera(show_figure=False):
+def get_grasp_from_camera(camera_type='kinect', show_figure=False):
     # get image
     print('-' * 20 + 'starting camera' + '-' * 20)
-    camera = KinectCamera()
+    if camera_type == 'kinect':
+        camera = KinectCamera()
+    else:
+        camera = RealsenseCamera()
     # camera.show_image()
     image_rgb, image_depth = camera.get_image()
     pointcloud = camera.get_pointcloud()
@@ -199,7 +211,10 @@ def get_grasp_from_camera(show_figure=False):
 
     # process data
     end_points, cloud = get_and_process_data(
-        color=image_rgb, depth=image_depth, cloud=pointcloud)
+        camera=camera_type,
+        color=image_rgb, 
+        depth=image_depth, 
+        cloud=pointcloud)
     print('-' * 20 + 'image processed' + '-' * 20)
 
     # get grasps
@@ -236,17 +251,18 @@ if __name__ == '__main__':
     if cfgs.source == 'file':
         data_dir = 'GraspNetToolBox/doc/example_data'
         grasps = get_grasp_from_file(data_dir, show_figure=True)
-    elif cfgs.source == 'camera':
-        cloud, grasps = get_grasp_from_camera(show_figure=True)
+    else:
+        cloud, grasps = get_grasp_from_camera(camera_type=cfgs.source, show_figure=True)
 
     # get ord
     grasps.sort_by_score()
+    # print(grasps)
     filtered_grasps = []
     for grasp in grasps:
         ord_in_camera = grasp.translation
-        ord_in_base = camera_to_base(ord_in_camera)
+        ord_in_base = ord_camera_to_base(ord_in_camera)
         # filter grasps that is too low
-        if ord_in_base[2] > 0.08 and ord_in_base[2] < 0.5:
+        if ord_in_base[2] > 0.1 and ord_in_base[2] < 0.5:
             filtered_grasps.append(grasp)
 
     print('grasp count:', len(filtered_grasps))
@@ -258,20 +274,26 @@ if __name__ == '__main__':
 
     # show final result
     gripper = best_grasp.to_open3d_geometry()
+    rot_in_camera = best_grasp.rotation_matrix
+    rot_in_base = rot_camera_to_base(rot_in_camera)
     o3d.visualization.draw_geometries([cloud, gripper])
 
+    time.sleep(5)
     # execute real grasp if score is high enough
     if best_grasp.score > 0.2 and cfgs.move_robot:
         # ord transform
         ord_in_camera = best_grasp.translation
-        ord_in_base = camera_to_base(ord_in_camera)
+        ord_in_base = ord_camera_to_base(ord_in_camera)
         print('grasp ord:', ord_in_base)
+        # rot transform
+        rot_in_camera = best_grasp.rotation_matrix
+        rot_in_base = rot_camera_to_base(rot_in_camera)
         # trans rotation matrix to quaternion
-        gripper_quaternion = from_matrix_to_q(best_grasp.rotation_matrix)
+        gripper_quaternion = from_matrix_to_q(rot_in_camera)
         print('grasp rot:', gripper_quaternion)
         # move robot
         robot_controller.move_robot(
-            pos=ord_in_base, rotation=gripper_quaternion)
+            pos=ord_in_base, rotation=gripper_quaternion, v=0.05)
         # close gripper
         gripper_controller.close_gripper()
         # reset robot

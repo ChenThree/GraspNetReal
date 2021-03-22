@@ -22,8 +22,31 @@ trans_matrix = np.array([[
 inv_matrix = np.linalg.inv(trans_matrix)
 trans_offset = np.array([x, y, z])
 
+def rot_camera_to_base(rot_in_camera):
+    """transform camera rot to base rot.
 
-def camera_to_base(ord_in_camera):
+    Args:
+        rot_in_camera (np.array): x,y,z
+
+    Returns:
+        rot_in_base (np.array): x,y,z
+    """
+    return np.matmul(inv_matrix, rot_in_camera)
+
+
+def rot_base_to_camera(rot_in_base):
+    """transform base rot to camera rot.
+
+    Args:
+        rot_in_base (np.array): x,y,z
+
+    Returns:
+        rot_in_camera (np.array): x,y,z
+    """
+    return np.matmul(trans_matrix, rot_in_base)
+
+
+def ord_camera_to_base(ord_in_camera):
     """transform camera ord to base ord.
 
     Args:
@@ -37,7 +60,7 @@ def camera_to_base(ord_in_camera):
     return np.matmul(inv_matrix, ord_in_camera) + trans_offset
 
 
-def base_to_camera(ord_in_base):
+def ord_base_to_camera(ord_in_base):
     """transform base ord to camera ord.
 
     Args:
@@ -60,7 +83,7 @@ if __name__ == '__main__':
     print('offset:')
     print(trans_offset)
     print('-' * 80)
-    print(camera_to_base(np.array([0, 0, 0])))
-    print(camera_to_base(np.array([0, 0, 0.83])))
-    print(base_to_camera(np.array([0.71760888, -0.46630958, 0.59070892])))
-    print(base_to_camera(np.array([0.2, -0.2, 0])))
+    print(ord_camera_to_base(np.array([0, 0, 0])))
+    print(ord_camera_to_base(np.array([0, 0, 0.83])))
+    print(ord_base_to_camera(np.array([0.71760888, -0.46630958, 0.59070892])))
+    print(ord_base_to_camera(np.array([0.2, -0.2, 0])))

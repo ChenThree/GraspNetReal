@@ -3,8 +3,7 @@ import serial
 import time
 
 # get gripper port
-# from GraspNetToolBox.config import GRIPPER_PORT
-GRIPPER_PORT = '/dev/ttyUSB0'
+from GraspNetToolBox.config import GRIPPER_PORT
 
 class GripperController():
 

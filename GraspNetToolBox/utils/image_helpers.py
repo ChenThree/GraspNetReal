@@ -10,11 +10,14 @@ class RealsenseCamera():
 
     def __init__(self):
         self.pipeline = realsense.pipeline()
+        # align depth image to color image
+        self.align = realsense.align(realsense.stream.color)
 
     def get_image(self):
         self.pipeline.start()
         # get frame
         frames = self.pipeline.wait_for_frames()
+        frames = self.align.process(frames)  # align image
         # convert rgb to np.array
         frame_rgb = frames.get_color_frame()
         image_rgb = np.asanyarray(frame_rgb.get_data())
@@ -24,7 +27,39 @@ class RealsenseCamera():
         image_depth = np.asanyarray(frame_depth.get_data())
         image_depth = cv.cvtColor(image_depth, cv.COLOR_RGB2BGR)
         self.pipeline.stop()
-        return image_rgb, image_depth
+        return image_rgb / 255.0, image_depth[:, :, 1]
+
+    def get_pointcloud(self):
+        # get pointcloud
+        self.pipeline.start()
+        # get frame
+        frames = self.pipeline.wait_for_frames()
+        frames = self.align.process(frames)  # align image
+        frame_rgb = frames.get_color_frame()
+        frame_depth = frames.get_depth_frame()
+        # cal pointcloud
+        pc = realsense.pointcloud()
+        pc.map_to(frame_rgb)
+        cloud = pc.calculate(frame_depth)
+        cloud = cloud.get_vertices()
+        cloud = np.asanyarray(cloud)
+        # format
+        cloud = list(map(list, cloud))
+        cloud = np.asanyarray(cloud)
+        # reshape
+        shape = np.shape(np.asanyarray(frame_rgb.get_data()))
+        cloud = cloud.reshape(shape)
+        self.pipeline.stop()
+        return cloud
+
+    def get_intrinsics_matrix(self):
+        self.pipeline.start()
+        # get frame
+        frames = self.pipeline.wait_for_frames()
+        frame_rgb = frames.get_color_frame()
+        self.pipeline.stop()
+        intrinsics_matrix = np.array(frame_rgb.profile.intrinsics)
+        return intrinsics_matrix
 
 
 class KinectCamera():
@@ -67,10 +102,15 @@ class KinectCamera():
 
 if __name__ == '__main__':
     camera = RealsenseCamera()
+    # camera = KinectCamera()
     image_rgb, image_depth = camera.get_image()
-    plt.imshow(image_rgb)
-    plt.show()
-    plt.imshow(image_depth)
-    plt.show()
-    print(np.shape(image_rgb))
-    print(np.shape(image_depth))
+    if False:
+        plt.imshow(image_rgb)
+        plt.show()
+        plt.imshow(image_depth)
+        plt.show()
+        print(np.shape(image_rgb))
+        print(np.shape(image_depth))
+    # print(camera.get_intrinsics_matrix())
+    print(np.shape(camera.get_pointcloud()))
+    print(camera.get_pointcloud())

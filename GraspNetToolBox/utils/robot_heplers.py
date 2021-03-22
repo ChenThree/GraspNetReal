@@ -11,6 +11,12 @@ class RobotController():
     def __init__(self):
         self.controller = HAPI(IP_ADDRESS)
 
+    def get_pos(self):
+        return self.controller.GetCurrentEndPos()[0]
+
+    def get_rot(self):
+        return self.controller.GetCurrentEndPos()[1]
+
     def wait_for_movement(self):
         # wait for movement to complete
         while not self.controller.isLastMovementEnd():
@@ -36,11 +42,13 @@ class RobotController():
                    v=0.1,
                    t=None):
         print('move to given point')
-        # rotate
-        self.controller.MoveEndPointToPosition(
-            rotation=rotation, a=a, v=v, t=t)
         self.wait_for_movement()
-        # move
-        self.controller.MoveEndPointToPosition(pos=pos, a=a, v=v, t=t)
+        self.controller.MoveEndPointToPosition(rotation=rotation, pos=pos, a=a, v=v, t=t)
         self.wait_for_movement()
         print('move to given point completed')
+
+if __name__ == '__main__':
+    controller = RobotController()
+    print(controller.get_pos())
+    print(controller.get_rot())
+
