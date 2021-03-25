@@ -104,7 +104,7 @@ if __name__ == '__main__':
     camera = RealsenseCamera()
     # camera = KinectCamera()
     image_rgb, image_depth = camera.get_image()
-    if False:
+    if True:
         plt.imshow(image_rgb)
         plt.show()
         plt.imshow(image_depth)

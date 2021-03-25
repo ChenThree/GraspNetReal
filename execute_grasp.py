@@ -20,7 +20,7 @@ from GraspNetToolBox.utils.data_utils import CameraInfo, create_point_cloud_from
 # gripper control
 from GraspNetToolBox.utils.gripper_helpers import GripperController
 from GraspNetToolBox.utils.image_helpers import KinectCamera, RealsenseCamera
-from GraspNetToolBox.utils.ord_helpers import ord_camera_to_base, rot_camera_to_base
+from GraspNetToolBox.utils.ord_helpers import ord_camera_to_base, rot_camera_to_base, ord_camera_to_hand, ord_hand_to_base
 # robot control
 from GraspNetToolBox.utils.robot_heplers import RobotController
 
@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument(
         '--collision_thresh',
         type=float,
-        default=0.01,
+        default=0.004,
         help='Collision Threshold in collision detection [default: 0.01]')
     parser.add_argument(
         '--voxel_size',
@@ -84,7 +84,11 @@ def get_net():
     return net
 
 
-def get_and_process_data(camera='Kinect', data_dir=None, color=None, depth=None, cloud=None):
+def get_and_process_data(camera='Kinect',
+                         data_dir=None,
+                         color=None,
+                         depth=None,
+                         cloud=None):
     # get cloud if given cloud is None
     if cloud is None:
         # load data
@@ -101,6 +105,7 @@ def get_and_process_data(camera='Kinect', data_dir=None, color=None, depth=None,
             intrinsic = meta['intrinsic_matrix']
             factor_depth = meta['factor_depth']
         else:
+            # kinect, but has some bugs
             intrinsic = get_intrinsics_matrix()
             factor_depth = [[1000.0]]
 
@@ -167,7 +172,9 @@ def get_grasps(net, end_points):
 def collision_detection(gg, cloud):
     mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size)
     collision_mask = mfcdetector.detect(
-        gg, approach_dist=cfgs.approach_dist, collision_thresh=cfgs.collision_thresh)
+        gg,
+        approach_dist=cfgs.approach_dist,
+        collision_thresh=cfgs.collision_thresh)
     gg = gg[~collision_mask]
     return gg
 
@@ -212,8 +219,8 @@ def get_grasp_from_camera(camera_type='kinect', show_figure=False):
     # process data
     end_points, cloud = get_and_process_data(
         camera=camera_type,
-        color=image_rgb, 
-        depth=image_depth, 
+        color=image_rgb,
+        depth=image_depth,
         cloud=pointcloud)
     print('-' * 20 + 'image processed' + '-' * 20)
 
@@ -234,7 +241,11 @@ def get_grasp_from_camera(camera_type='kinect', show_figure=False):
 if __name__ == '__main__':
     # parse args
     cfgs = parse_args()
-
+    print('*'*100)
+    print('using configs:')
+    for key in vars(cfgs):
+        print(key, ': ', getattr(cfgs, key))
+    print('*'*100)
     # move ur robot to start point, reset gripper
     if cfgs.move_robot is True:
         # start controller
@@ -252,53 +263,52 @@ if __name__ == '__main__':
         data_dir = 'GraspNetToolBox/doc/example_data'
         grasps = get_grasp_from_file(data_dir, show_figure=True)
     else:
-        cloud, grasps = get_grasp_from_camera(camera_type=cfgs.source, show_figure=True)
+        cloud, grasps = get_grasp_from_camera(
+            camera_type=cfgs.source, show_figure=True)
 
-    # get ord
+    # get grasp ords
     grasps.sort_by_score()
-    # print(grasps)
     filtered_grasps = []
     for grasp in grasps:
         ord_in_camera = grasp.translation
-        ord_in_base = ord_camera_to_base(ord_in_camera)
+        ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
+        print(ord_in_base)
         # filter grasps that is too low
-        if ord_in_base[2] > 0.1 and ord_in_base[2] < 0.5:
+        if ord_in_base[2] > 0 and ord_in_base[2] < 0.5:
             filtered_grasps.append(grasp)
 
     print('grasp count:', len(filtered_grasps))
 
-    # best grasp
+    # get best grasp and show final result
     best_grasp = filtered_grasps[0]
-    print('best grasp')
-    print(best_grasp)
-
-    # show final result
     gripper = best_grasp.to_open3d_geometry()
     rot_in_camera = best_grasp.rotation_matrix
     rot_in_base = rot_camera_to_base(rot_in_camera)
     o3d.visualization.draw_geometries([cloud, gripper])
 
-    time.sleep(5)
     # execute real grasp if score is high enough
     if best_grasp.score > 0.2 and cfgs.move_robot:
-        # ord transform
+        # ord and rot transform
         ord_in_camera = best_grasp.translation
-        ord_in_base = ord_camera_to_base(ord_in_camera)
-        print('grasp ord:', ord_in_base)
-        # rot transform
         rot_in_camera = best_grasp.rotation_matrix
+
+        ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
         rot_in_base = rot_camera_to_base(rot_in_camera)
         # trans rotation matrix to quaternion
         gripper_quaternion = from_matrix_to_q(rot_in_camera)
+        print('grasp ord:', ord_in_base)
         print('grasp rot:', gripper_quaternion)
-        # move robot
-        robot_controller.move_robot(
-            pos=ord_in_base, rotation=gripper_quaternion, v=0.05)
-        # close gripper
-        gripper_controller.close_gripper()
-        # reset robot
-        robot_controller.reset_robot()
-        # wait for sometime
-        time.sleep(2)
-        # open gripper
-        gripper_controller.open_gripper()
+
+        # wait for confirm
+        confirm = input('input y/n for grasp executing:')
+        if confirm == 'y':
+            # move robot, not moving rotation=gripper_quaternion
+            robot_controller.move_robot(pos=ord_in_base, v=0.05)
+            # close gripper
+            gripper_controller.close_gripper()
+            # reset robot to starting point
+            robot_controller.reset_robot()
+            # wait for sometime
+            time.sleep(2)
+            # open gripper
+            gripper_controller.open_gripper()

@@ -23,7 +23,7 @@ class RobotController():
             time.sleep(0.5)
         time.sleep(1)
 
-    def reset_robot(self, a=1.2, v=0.1, t=None):
+    def reset_robot(self, a=1.2, v=0.05, t=None):
         # move robot
         print('move to start point')
         self.controller.MoveEndPointToPosition(
@@ -39,7 +39,7 @@ class RobotController():
                    pos=ROBOT_START_POINT,
                    rotation=ROBOT_START_ROTATION,
                    a=1.2,
-                   v=0.1,
+                   v=0.05,
                    t=None):
         print('move to given point')
         self.wait_for_movement()
