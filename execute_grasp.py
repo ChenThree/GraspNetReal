@@ -43,7 +43,7 @@ def parse_args():
     parser.add_argument(
         '--collision_thresh',
         type=float,
-        default=0.004,
+        default=0.001,
         help='Collision Threshold in collision detection [default: 0.01]')
     parser.add_argument(
         '--voxel_size',
@@ -264,7 +264,7 @@ if __name__ == '__main__':
         grasps = get_grasp_from_file(data_dir, show_figure=True)
     else:
         cloud, grasps = get_grasp_from_camera(
-            camera_type=cfgs.source, show_figure=True)
+            camera_type=cfgs.source, show_figure=False)
 
     # get grasp ords
     grasps.sort_by_score()
@@ -272,19 +272,15 @@ if __name__ == '__main__':
     for grasp in grasps:
         ord_in_camera = grasp.translation
         ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
-        print(ord_in_base)
         # filter grasps that is too low
         if ord_in_base[2] > 0 and ord_in_base[2] < 0.5:
             filtered_grasps.append(grasp)
 
     print('grasp count:', len(filtered_grasps))
 
-    # get best grasp and show final result
+    # get best grasp
     best_grasp = filtered_grasps[0]
-    gripper = best_grasp.to_open3d_geometry()
-    rot_in_camera = best_grasp.rotation_matrix
-    rot_in_base = rot_camera_to_base(rot_in_camera)
-    o3d.visualization.draw_geometries([cloud, gripper])
+    print(best_grasp)
 
     # execute real grasp if score is high enough
     if best_grasp.score > 0.2 and cfgs.move_robot:
@@ -295,12 +291,21 @@ if __name__ == '__main__':
         ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
         rot_in_base = rot_camera_to_base(rot_in_camera)
         # trans rotation matrix to quaternion
-        gripper_quaternion = from_matrix_to_q(rot_in_camera)
+        gripper_quaternion = from_matrix_to_q(rot_in_base)
+        print('*'*100)
         print('grasp ord:', ord_in_base)
+        print('grasp rot:', from_matrix_to_q(rot_in_camera))
         print('grasp rot:', gripper_quaternion)
+        print('*'*100)
+
+        # show final result
+        gripper = best_grasp.to_open3d_geometry()
+        rot_in_camera = best_grasp.rotation_matrix
+        rot_in_base = rot_camera_to_base(rot_in_camera)
+        o3d.visualization.draw_geometries([cloud, gripper])
 
         # wait for confirm
-        confirm = input('input y/n for grasp executing:')
+        confirm = input('Input y/n for grasp executing: ')
         if confirm == 'y':
             # move robot, not moving rotation=gripper_quaternion
             robot_controller.move_robot(pos=ord_in_base, v=0.05)

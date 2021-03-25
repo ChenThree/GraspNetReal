@@ -1,19 +1,15 @@
 import numpy as np
+import math
 
 # get q and x,y,z from config
 from GraspNetToolBox.config import pos_kinect, rot_kinect, pos_realsense, rot_realsense, ROBOT_START_POINT, ROBOT_START_ROTATION
 
 
-def get_trans_matrix(pos, rot):
-    # get trans matrix
-    x = pos[0]
-    y = pos[1]
-    z = pos[2]
+def q_to_matrix(rot):
     qw = rot[0]
     qx = rot[1]
     qy = rot[2]
     qz = rot[3]
-    # get matrix
     trans_matrix = list()
     trans_matrix.append([
         1 - 2 * qy * qy - 2 * qz * qz, 2 * qx * qy + 2 * qw * qz,
@@ -28,9 +24,47 @@ def get_trans_matrix(pos, rot):
         1 - 2 * qx * qx - 2 * qy * qy
     ])
     trans_matrix = np.array(trans_matrix)
-    # 求逆
+    return trans_matrix
+
+
+def matrix_to_q(rot):
+    # select to biggest num to get stable result
+    qw = qx = qy = qz = 0
+    if rot[0, 0] + rot[1, 1] + rot[2, 2] + 1 > 0:
+        qw = math.sqrt(rot[0, 0] + rot[1, 1] + rot[2, 2] + 1)/2
+    if rot[0, 0] - rot[1, 1] - rot[2, 2] + 1 > 0:
+        qx = math.sqrt(rot[0, 0] - rot[1, 1] - rot[2, 2] + 1)/2
+    if -rot[0, 0] + rot[1, 1] - rot[2, 2] + 1 > 0:
+        qy = math.sqrt(-rot[0, 0] + rot[1, 1] - rot[2, 2] + 1)/2
+    if -rot[0, 0] - rot[1, 1] + rot[2, 2] + 1 > 0:
+        qz = math.sqrt(-rot[0, 0] - rot[1, 1] + rot[2, 2] + 1)/2
+    max_num = max([qw, qx, qy, qz])
+    # print([qw, qx, qy, qz])
+    if qw == max_num:
+        qx = (rot[1, 2] - rot[2, 1])/(4*qw)
+        qy = (rot[2, 0] - rot[0, 2])/(4*qw)
+        qz = (rot[0, 1] - rot[1, 0])/(4*qw)
+    elif qx == max_num:
+        qw = (rot[1, 2] - rot[2, 1])/(4*qx)
+        qy = (rot[0, 1] - rot[1, 0])/(4*qx)
+        qz = (rot[2, 0] - rot[0, 2])/(4*qx)
+    elif qy == max_num:
+        qw = (rot[2, 0] - rot[0, 2])/(4*qy)
+        qy = (rot[0, 1] - rot[1, 0])/(4*qy)
+        qz = (rot[1, 2] - rot[2, 1])/(4*qy)
+    else:
+        qw = (rot[0, 1] - rot[1, 0])/(4*qz)
+        qy = (rot[2, 0] - rot[0, 2])/(4*qz)
+        qz = (rot[1, 2] - rot[2, 1])/(4*qz)
+    return np.array([qw, qx, qy, qz])
+
+
+def get_trans_matrix(pos, rot):
+    # get matrix
+    trans_matrix = q_to_matrix(rot)
     inv_matrix = np.linalg.inv(trans_matrix)
-    trans_offset = np.array([x, y, z])
+    # get offset
+    trans_offset = pos
     return trans_matrix, inv_matrix, trans_offset
 
 
@@ -70,7 +104,8 @@ def ord_camera_to_base(source, ord_in_camera):
     if len(ord_in_camera) != 3:
         raise ValueError('Input should be a np.array with len == 3')
     if source == 'kinect':
-        return np.matmul(inv_matrix_kinect, ord_in_camera) + trans_offset_kinect
+        return np.matmul(inv_matrix_kinect,
+                         ord_in_camera) + trans_offset_kinect
     return ord_hand_to_base(ord_camera_to_hand(ord_in_camera))
 
 
@@ -104,4 +139,17 @@ def ord_hand_to_base(ord_in_hand):
 
 
 if __name__ == '__main__':
-    print(ord_camera_to_base('kinect', np.array([0, 0, 0.85])))
+    rot_in_base = rot_camera_to_base(
+            np.array([[-2.7900429e-02, 2.3445182e-02, 9.9933565e-01],
+                      [7.6507765e-0, -6.4290589e-01, 3.6443252e-02],
+                      [6.4333332e-01, 7.6558614e-01, -3.3464833e-08]]))
+    print('matrix:')
+    print(rot_in_base)
+    q_in_base = matrix_to_q(rot_in_base)
+    print('q:')
+    print(q_in_base)
+    matrix_in_base = q_to_matrix(q_in_base)
+    print('matrix:')
+    print(matrix_in_base)
+    print('q:')
+    print(matrix_to_q(matrix_in_base))
