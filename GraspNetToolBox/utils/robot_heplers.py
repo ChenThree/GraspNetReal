@@ -45,12 +45,18 @@ class RobotController():
 
 
 if __name__ == '__main__':
+    from GraspNetToolBox.utils.ord_helpers import q_to_euler, euler_to_q
+    import numpy as np
     controller = RobotController()
-    print('now_pos ==', controller.get_pos())
-    print('now_rot ==', controller.get_rot())
-    # controller.reset_robot()
-    # camera
-    # controller.move_robot(rotation=[-0.58028898, 0.23624997, -0.28031522, 0.68852426])
+    pos = controller.get_pos()
+    q = controller.get_rot()
+    print('now_pos ==', pos)
+    print('now_rot ==', q)
+    euler = q_to_euler(q)
+    print(euler)
+    euler = np.array([-180, 0, 0])
+    q = euler_to_q(euler)
+    print(q)
+    controller.reset_robot()
     # base
-    controller.move_robot(
-        rotation=[0.65815542, 0.26924799, -0.27388243, 0.64755338])
+    # controller.move_robot(rotation=q)
