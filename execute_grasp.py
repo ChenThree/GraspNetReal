@@ -19,7 +19,7 @@ from GraspNetToolBox.utils.data_utils import CameraInfo, create_point_cloud_from
 # gripper control
 from GraspNetToolBox.utils.gripper_helpers import GripperController
 from GraspNetToolBox.utils.image_helpers import KinectCamera, RealsenseCamera
-from GraspNetToolBox.utils.ord_helpers import q_to_matrix, matrix_to_q, ord_camera_to_base, rot_camera_to_base, ord_camera_to_hand, ord_hand_to_base
+from GraspNetToolBox.utils.ord_helpers import q_to_matrix, matrix_to_q, ord_camera_to_base, rot_camera_to_q_base, ord_camera_to_hand, ord_hand_to_base
 # robot control
 from GraspNetToolBox.utils.robot_heplers import RobotController
 
@@ -272,7 +272,7 @@ if __name__ == '__main__':
         ord_in_camera = grasp.translation
         ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
         # filter grasps that is too low
-        if ord_in_base[2] > 0 and ord_in_base[2] < 0.5:
+        if ord_in_base[2] > 0.05 and ord_in_base[2] < 0.5:
             filtered_grasps.append(grasp)
 
     print('grasp count:', len(filtered_grasps))
@@ -280,7 +280,7 @@ if __name__ == '__main__':
     # get best grasp
     best_grasp = filtered_grasps[0]
     print(best_grasp)
-
+    best_grasp.
     # execute real grasp if score is high enough
     if best_grasp.score > 0.2 and cfgs.move_robot:
         # ord and rot transform
@@ -288,25 +288,22 @@ if __name__ == '__main__':
         rot_in_camera = best_grasp.rotation_matrix
 
         ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
-        rot_in_base = rot_camera_to_base(rot_in_camera)
+        q_in_base = rot_camera_to_q_base(rot_in_camera)
         # trans rotation matrix to quaternion
-        gripper_quaternion = matrix_to_q(rot_in_base)
         print('*' * 100)
         print('grasp ord:', ord_in_base)
-        print('grasp rot:', gripper_quaternion)
+        print('grasp rot:', q_in_base)
         print('*' * 100)
 
         # show final result
         gripper = best_grasp.to_open3d_geometry()
-        rot_in_camera = best_grasp.rotation_matrix
-        rot_in_base = rot_camera_to_base(rot_in_camera)
         o3d.visualization.draw_geometries([cloud, gripper])
 
         # wait for confirm
         confirm = input('Input y/n for grasp executing: ')
         if confirm == 'y':
-            # move robot pos=ord_in_base, 
-            robot_controller.move_robot(rotation=gripper_quaternion, v=0.05)
+            # move robot pos=ord_in_base,
+            robot_controller.move_robot(rotation=q_in_base, v=0.05, a=0.3)
             # close gripper
             gripper_controller.close_gripper()
             # reset robot to starting point

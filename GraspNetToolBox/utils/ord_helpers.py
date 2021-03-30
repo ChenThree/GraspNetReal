@@ -2,7 +2,8 @@ import numpy as np
 import math
 
 # get q and x,y,z from config
-from GraspNetToolBox.config import pos_kinect, rot_kinect, pos_realsense, rot_realsense, ROBOT_START_POINT, ROBOT_START_ROTATION
+from scipy.spatial.transform import Rotation as R
+from GraspNetToolBox.config import pos_kinect, q_kinect, pos_realsense, q_realsense, ROBOT_START_POINT, ROBOT_START_ROTATION
 
 
 def q_to_matrix(rot):
@@ -28,35 +29,9 @@ def q_to_matrix(rot):
 
 
 def matrix_to_q(rot):
-    # select to biggest num to get stable result
-    qw = qx = qy = qz = 0
-    if rot[0, 0] + rot[1, 1] + rot[2, 2] + 1 > 0:
-        qw = math.sqrt(rot[0, 0] + rot[1, 1] + rot[2, 2] + 1)/2
-    if rot[0, 0] - rot[1, 1] - rot[2, 2] + 1 > 0:
-        qx = math.sqrt(rot[0, 0] - rot[1, 1] - rot[2, 2] + 1)/2
-    if -rot[0, 0] + rot[1, 1] - rot[2, 2] + 1 > 0:
-        qy = math.sqrt(-rot[0, 0] + rot[1, 1] - rot[2, 2] + 1)/2
-    if -rot[0, 0] - rot[1, 1] + rot[2, 2] + 1 > 0:
-        qz = math.sqrt(-rot[0, 0] - rot[1, 1] + rot[2, 2] + 1)/2
-    max_num = max([qw, qx, qy, qz])
-    # print([qw, qx, qy, qz])
-    if qw == max_num:
-        qx = (rot[1, 2] - rot[2, 1])/(4*qw)
-        qy = (rot[2, 0] - rot[0, 2])/(4*qw)
-        qz = (rot[0, 1] - rot[1, 0])/(4*qw)
-    elif qx == max_num:
-        qw = (rot[1, 2] - rot[2, 1])/(4*qx)
-        qy = (rot[0, 1] - rot[1, 0])/(4*qx)
-        qz = (rot[2, 0] - rot[0, 2])/(4*qx)
-    elif qy == max_num:
-        qw = (rot[2, 0] - rot[0, 2])/(4*qy)
-        qy = (rot[0, 1] - rot[1, 0])/(4*qy)
-        qz = (rot[1, 2] - rot[2, 1])/(4*qy)
-    else:
-        qw = (rot[0, 1] - rot[1, 0])/(4*qz)
-        qy = (rot[2, 0] - rot[0, 2])/(4*qz)
-        qz = (rot[1, 2] - rot[2, 1])/(4*qz)
-    return np.array([qw, qx, qy, qz])
+    r = R.from_matrix(rot)
+    quat = r.as_quat()
+    return np.array([quat[3], quat[0], quat[1], quat[2]])
 
 
 def get_trans_matrix(pos, rot):
@@ -70,25 +45,38 @@ def get_trans_matrix(pos, rot):
 
 # get matrix and offset
 trans_matrix_kinect, inv_matrix_kinect, trans_offset_kinect = get_trans_matrix(
-    pos_kinect, rot_kinect)
+    pos_kinect, q_kinect)
 trans_matrix_realsense, inv_matrix_realsense, trans_offset_realsense = get_trans_matrix(
-    pos_realsense, rot_realsense)
+    pos_realsense, q_realsense)
 trans_matrix_hand, inv_matrix_hand, trans_offset_hand = get_trans_matrix(
     ROBOT_START_POINT, ROBOT_START_ROTATION)
 # gripper center offset for realsense
 trans_offset_realsense += np.array([0, 0, 0.19])
 
 
-def rot_camera_to_base(rot_in_camera):
+def qmul(q0, q1):
+    w0, x0, y0, z0 = q0
+    w1, x1, y1, z1 = q1
+    return np.array([
+        -x0 * x1 - y0 * y1 - z0 * z1 + w0 * w1,
+        x0 * w1 + y0 * z1 - z0 * y1 + w0 * x1,
+        -x0 * z1 + y0 * w1 + z0 * x1 + w0 * y1,
+        x0 * y1 - y0 * x1 + z0 * w1 + w0 * z1
+    ])
+
+
+def rot_camera_to_q_base(rot_in_camera):
     """transform camera rot to base rot.
 
     Args:
-        rot_in_camera (np.array): x,y,z
+        rot_in_camera (np.array): 3*3 rot_matrix
 
     Returns:
-        rot_in_base (np.array): x,y,z
+        q_in_base (np.array): w,x,y,z quat
     """
-    return np.matmul(inv_matrix_kinect, rot_in_camera)
+    q1 = q_kinect
+    q2 = matrix_to_q(rot_in_camera)
+    return qmul(q1, q2)
 
 
 def ord_camera_to_base(source, ord_in_camera):
@@ -139,17 +127,11 @@ def ord_hand_to_base(ord_in_hand):
 
 
 if __name__ == '__main__':
-    rot_in_base = rot_camera_to_base(
-            np.array([[-2.7900429e-02, 2.3445182e-02, 9.9933565e-01],
-                      [7.6507765e-01, -6.4290589e-01, 3.6443252e-02],
-                      [6.4333332e-01, 7.6558614e-01, -3.3464833e-08]]))
-    print('matrix:')
-    print(rot_in_base)
-    q_in_base = matrix_to_q(rot_in_base)
-    print('q:')
+    print(inv_matrix_kinect)
+    matrix_in_camera = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+    # print(np.matmul(matrix_in_camera, matrix_in_camera.T))
+    print('q in camera:')
+    print(matrix_to_q(matrix_in_camera))
+    q_in_base = rot_camera_to_q_base(matrix_in_camera)
+    print('q in base:')
     print(q_in_base)
-    matrix_in_base = q_to_matrix(q_in_base)
-    print('matrix:')
-    print(matrix_in_base)
-    print('q:')
-    print(matrix_to_q(matrix_in_base))

@@ -35,20 +35,22 @@ class RobotController():
         self.wait_for_movement()
         print('move to start point completed')
 
-    def move_robot(self,
-                   pos=ROBOT_START_POINT,
-                   rotation=ROBOT_START_ROTATION,
-                   a=1.2,
-                   v=0.05,
-                   t=None):
+    def move_robot(self, pos=None, rotation=None, a=1.2, v=0.05, t=None):
         print('move to given point')
         self.wait_for_movement()
-        self.controller.MoveEndPointToPosition(rotation=rotation, pos=pos, a=a, v=v, t=t)
+        self.controller.MoveEndPointToPosition(
+            rotation=rotation, pos=pos, a=a, v=v, t=t)
         self.wait_for_movement()
         print('move to given point completed')
 
+
 if __name__ == '__main__':
     controller = RobotController()
-    print(controller.get_pos())
-    print(controller.get_rot())
-
+    print('now_pos ==', controller.get_pos())
+    print('now_rot ==', controller.get_rot())
+    # controller.reset_robot()
+    # camera
+    # controller.move_robot(rotation=[-0.58028898, 0.23624997, -0.28031522, 0.68852426])
+    # base
+    controller.move_robot(
+        rotation=[0.65815542, 0.26924799, -0.27388243, 0.64755338])
