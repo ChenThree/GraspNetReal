@@ -141,7 +141,7 @@ def ord_hand_to_base(ord_in_hand):
 if __name__ == '__main__':
     rot_in_base = rot_camera_to_base(
             np.array([[-2.7900429e-02, 2.3445182e-02, 9.9933565e-01],
-                      [7.6507765e-0, -6.4290589e-01, 3.6443252e-02],
+                      [7.6507765e-01, -6.4290589e-01, 3.6443252e-02],
                       [6.4333332e-01, 7.6558614e-01, -3.3464833e-08]]))
     print('matrix:')
     print(rot_in_base)

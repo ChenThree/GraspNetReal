@@ -11,7 +11,6 @@ from PIL import Image
 from GraspNetToolBox.config import KINECT_MASK_IAMGE_PATH, REALSENSE_MASK_IAMGE_PATH
 # network
 from GraspNetToolBox.models.graspnet import GraspNet, pred_decode
-from GraspNetToolBox.RTIF.LowLevel.quaternion import from_matrix_to_q
 from GraspNetToolBox.utils.calibration_helpers import get_intrinsics_matrix
 # collision_detector
 from GraspNetToolBox.utils.collision_detector import ModelFreeCollisionDetector
@@ -20,7 +19,7 @@ from GraspNetToolBox.utils.data_utils import CameraInfo, create_point_cloud_from
 # gripper control
 from GraspNetToolBox.utils.gripper_helpers import GripperController
 from GraspNetToolBox.utils.image_helpers import KinectCamera, RealsenseCamera
-from GraspNetToolBox.utils.ord_helpers import ord_camera_to_base, rot_camera_to_base, ord_camera_to_hand, ord_hand_to_base
+from GraspNetToolBox.utils.ord_helpers import q_to_matrix, matrix_to_q, ord_camera_to_base, rot_camera_to_base, ord_camera_to_hand, ord_hand_to_base
 # robot control
 from GraspNetToolBox.utils.robot_heplers import RobotController
 
@@ -241,11 +240,11 @@ def get_grasp_from_camera(camera_type='kinect', show_figure=False):
 if __name__ == '__main__':
     # parse args
     cfgs = parse_args()
-    print('*'*100)
+    print('*' * 100)
     print('using configs:')
     for key in vars(cfgs):
         print(key, ': ', getattr(cfgs, key))
-    print('*'*100)
+    print('*' * 100)
     # move ur robot to start point, reset gripper
     if cfgs.move_robot is True:
         # start controller
@@ -291,12 +290,11 @@ if __name__ == '__main__':
         ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
         rot_in_base = rot_camera_to_base(rot_in_camera)
         # trans rotation matrix to quaternion
-        gripper_quaternion = from_matrix_to_q(rot_in_base)
-        print('*'*100)
+        gripper_quaternion = matrix_to_q(rot_in_base)
+        print('*' * 100)
         print('grasp ord:', ord_in_base)
-        print('grasp rot:', from_matrix_to_q(rot_in_camera))
         print('grasp rot:', gripper_quaternion)
-        print('*'*100)
+        print('*' * 100)
 
         # show final result
         gripper = best_grasp.to_open3d_geometry()
@@ -307,8 +305,8 @@ if __name__ == '__main__':
         # wait for confirm
         confirm = input('Input y/n for grasp executing: ')
         if confirm == 'y':
-            # move robot, not moving rotation=gripper_quaternion
-            robot_controller.move_robot(pos=ord_in_base, v=0.05)
+            # move robot pos=ord_in_base, 
+            robot_controller.move_robot(rotation=gripper_quaternion, v=0.05)
             # close gripper
             gripper_controller.close_gripper()
             # reset robot to starting point
