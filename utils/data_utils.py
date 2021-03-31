@@ -8,7 +8,6 @@ import numpy as np
 
 class CameraInfo():
     """Camera intrisics for point cloud creation."""
-
     def __init__(self, width, height, fx, fy, cx, cy, scale):
         self.width = width
         self.height = height

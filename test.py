@@ -20,24 +20,27 @@ from graspnet_dataset import GraspNetDataset, collate_fn
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_root', required=True, help='Dataset root')
-parser.add_argument(
-    '--checkpoint_path', required=True, help='Model checkpoint path')
-parser.add_argument(
-    '--dump_dir', required=True, help='Dump dir to save outputs')
-parser.add_argument(
-    '--camera', required=True, help='Camera split [realsense/kinect]')
-parser.add_argument(
-    '--num_point',
-    type=int,
-    default=20000,
-    help='Point Number [default: 20000]')
-parser.add_argument(
-    '--num_view', type=int, default=300, help='View Number [default: 300]')
-parser.add_argument(
-    '--batch_size',
-    type=int,
-    default=1,
-    help='Batch Size during inference [default: 1]')
+parser.add_argument('--checkpoint_path',
+                    required=True,
+                    help='Model checkpoint path')
+parser.add_argument('--dump_dir',
+                    required=True,
+                    help='Dump dir to save outputs')
+parser.add_argument('--camera',
+                    required=True,
+                    help='Camera split [realsense/kinect]')
+parser.add_argument('--num_point',
+                    type=int,
+                    default=20000,
+                    help='Point Number [default: 20000]')
+parser.add_argument('--num_view',
+                    type=int,
+                    default=300,
+                    help='View Number [default: 300]')
+parser.add_argument('--batch_size',
+                    type=int,
+                    default=1,
+                    help='Batch Size during inference [default: 1]')
 parser.add_argument(
     '--collision_thresh',
     type=float,
@@ -50,11 +53,10 @@ parser.add_argument(
     help=
     'Voxel Size to process point clouds before collision detection [default: 0.01]'
 )
-parser.add_argument(
-    '--num_workers',
-    type=int,
-    default=30,
-    help='Number of workers used in evaluation [default: 30]')
+parser.add_argument('--num_workers',
+                    type=int,
+                    default=30,
+                    help='Number of workers used in evaluation [default: 30]')
 cfgs = parser.parse_args()
 
 # ------------------------------------------------------------------------- GLOBAL CONFIG BEG
@@ -68,37 +70,34 @@ def my_worker_init_fn(worker_id):
 
 
 # Create Dataset and Dataloader
-TEST_DATASET = GraspNetDataset(
-    cfgs.dataset_root,
-    valid_obj_idxs=None,
-    grasp_labels=None,
-    split='test',
-    camera=cfgs.camera,
-    num_points=cfgs.num_point,
-    remove_outlier=True,
-    augment=False,
-    load_label=False)
+TEST_DATASET = GraspNetDataset(cfgs.dataset_root,
+                               valid_obj_idxs=None,
+                               grasp_labels=None,
+                               split='test',
+                               camera=cfgs.camera,
+                               num_points=cfgs.num_point,
+                               remove_outlier=True,
+                               augment=False,
+                               load_label=False)
 
 print(len(TEST_DATASET))
 SCENE_LIST = TEST_DATASET.scene_list()
-TEST_DATALOADER = DataLoader(
-    TEST_DATASET,
-    batch_size=cfgs.batch_size,
-    shuffle=False,
-    num_workers=4,
-    worker_init_fn=my_worker_init_fn,
-    collate_fn=collate_fn)
+TEST_DATALOADER = DataLoader(TEST_DATASET,
+                             batch_size=cfgs.batch_size,
+                             shuffle=False,
+                             num_workers=4,
+                             worker_init_fn=my_worker_init_fn,
+                             collate_fn=collate_fn)
 print(len(TEST_DATALOADER))
 # Init the model
-net = GraspNet(
-    input_feature_dim=0,
-    num_view=cfgs.num_view,
-    num_angle=12,
-    num_depth=4,
-    cylinder_radius=0.05,
-    hmin=-0.02,
-    hmax_list=[0.01, 0.02, 0.03, 0.04],
-    is_training=False)
+net = GraspNet(input_feature_dim=0,
+               num_view=cfgs.num_view,
+               num_angle=12,
+               num_depth=4,
+               cylinder_radius=0.05,
+               hmin=-0.02,
+               hmax_list=[0.01, 0.02, 0.03, 0.04],
+               is_training=False)
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 net.to(device)
 # Load checkpoint
@@ -140,8 +139,8 @@ def inference():
 
             # collision detection
             if cfgs.collision_thresh > 0:
-                cloud, _ = TEST_DATASET.get_data(
-                    data_idx, return_raw_cloud=True)
+                cloud, _ = TEST_DATASET.get_data(data_idx,
+                                                 return_raw_cloud=True)
                 mfcdetector = ModelFreeCollisionDetector(
                     cloud, voxel_size=cfgs.voxel_size)
                 collision_mask = mfcdetector.detect(

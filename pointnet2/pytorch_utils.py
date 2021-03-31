@@ -9,7 +9,6 @@ from typing import List, Tuple
 
 
 class SharedMLP(nn.Sequential):
-
     def __init__(self,
                  args: List[int],
                  *,
@@ -23,17 +22,15 @@ class SharedMLP(nn.Sequential):
         for i in range(len(args) - 1):
             self.add_module(
                 name + 'layer{}'.format(i),
-                Conv2d(
-                    args[i],
-                    args[i + 1],
-                    bn=(not first or not preact or (i != 0)) and bn,
-                    activation=activation if
-                    (not first or not preact or (i != 0)) else None,
-                    preact=preact))
+                Conv2d(args[i],
+                       args[i + 1],
+                       bn=(not first or not preact or (i != 0)) and bn,
+                       activation=activation if
+                       (not first or not preact or (i != 0)) else None,
+                       preact=preact))
 
 
 class _BNBase(nn.Sequential):
-
     def __init__(self, in_size, batch_norm=None, name=''):
         super().__init__()
         self.add_module(name + 'bn', batch_norm(in_size))
@@ -43,25 +40,21 @@ class _BNBase(nn.Sequential):
 
 
 class BatchNorm1d(_BNBase):
-
     def __init__(self, in_size: int, *, name: str = ''):
         super().__init__(in_size, batch_norm=nn.BatchNorm1d, name=name)
 
 
 class BatchNorm2d(_BNBase):
-
     def __init__(self, in_size: int, name: str = ''):
         super().__init__(in_size, batch_norm=nn.BatchNorm2d, name=name)
 
 
 class BatchNorm3d(_BNBase):
-
     def __init__(self, in_size: int, name: str = ''):
         super().__init__(in_size, batch_norm=nn.BatchNorm3d, name=name)
 
 
 class _ConvBase(nn.Sequential):
-
     def __init__(self,
                  in_size,
                  out_size,
@@ -79,13 +72,12 @@ class _ConvBase(nn.Sequential):
         super().__init__()
 
         bias = bias and (not bn)
-        conv_unit = conv(
-            in_size,
-            out_size,
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=padding,
-            bias=bias)
+        conv_unit = conv(in_size,
+                         out_size,
+                         kernel_size=kernel_size,
+                         stride=stride,
+                         padding=padding,
+                         bias=bias)
         init(conv_unit.weight)
         if bias:
             nn.init.constant_(conv_unit.bias, 0)
@@ -114,7 +106,6 @@ class _ConvBase(nn.Sequential):
 
 
 class Conv1d(_ConvBase):
-
     def __init__(self,
                  in_size: int,
                  out_size: int,
@@ -128,24 +119,22 @@ class Conv1d(_ConvBase):
                  bias: bool = True,
                  preact: bool = False,
                  name: str = ''):
-        super().__init__(
-            in_size,
-            out_size,
-            kernel_size,
-            stride,
-            padding,
-            activation,
-            bn,
-            init,
-            conv=nn.Conv1d,
-            batch_norm=BatchNorm1d,
-            bias=bias,
-            preact=preact,
-            name=name)
+        super().__init__(in_size,
+                         out_size,
+                         kernel_size,
+                         stride,
+                         padding,
+                         activation,
+                         bn,
+                         init,
+                         conv=nn.Conv1d,
+                         batch_norm=BatchNorm1d,
+                         bias=bias,
+                         preact=preact,
+                         name=name)
 
 
 class Conv2d(_ConvBase):
-
     def __init__(self,
                  in_size: int,
                  out_size: int,
@@ -159,24 +148,22 @@ class Conv2d(_ConvBase):
                  bias: bool = True,
                  preact: bool = False,
                  name: str = ''):
-        super().__init__(
-            in_size,
-            out_size,
-            kernel_size,
-            stride,
-            padding,
-            activation,
-            bn,
-            init,
-            conv=nn.Conv2d,
-            batch_norm=BatchNorm2d,
-            bias=bias,
-            preact=preact,
-            name=name)
+        super().__init__(in_size,
+                         out_size,
+                         kernel_size,
+                         stride,
+                         padding,
+                         activation,
+                         bn,
+                         init,
+                         conv=nn.Conv2d,
+                         batch_norm=BatchNorm2d,
+                         bias=bias,
+                         preact=preact,
+                         name=name)
 
 
 class Conv3d(_ConvBase):
-
     def __init__(self,
                  in_size: int,
                  out_size: int,
@@ -190,24 +177,22 @@ class Conv3d(_ConvBase):
                  bias: bool = True,
                  preact: bool = False,
                  name: str = ''):
-        super().__init__(
-            in_size,
-            out_size,
-            kernel_size,
-            stride,
-            padding,
-            activation,
-            bn,
-            init,
-            conv=nn.Conv3d,
-            batch_norm=BatchNorm3d,
-            bias=bias,
-            preact=preact,
-            name=name)
+        super().__init__(in_size,
+                         out_size,
+                         kernel_size,
+                         stride,
+                         padding,
+                         activation,
+                         bn,
+                         init,
+                         conv=nn.Conv3d,
+                         batch_norm=BatchNorm3d,
+                         bias=bias,
+                         preact=preact,
+                         name=name)
 
 
 class FC(nn.Sequential):
-
     def __init__(self,
                  in_size: int,
                  out_size: int,
@@ -243,7 +228,6 @@ class FC(nn.Sequential):
 
 
 def set_bn_momentum_default(bn_momentum):
-
     def fn(m):
         if isinstance(m, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
             m.momentum = bn_momentum
@@ -252,7 +236,6 @@ def set_bn_momentum_default(bn_momentum):
 
 
 class BNMomentumScheduler(object):
-
     def __init__(self,
                  model,
                  bn_lambda,

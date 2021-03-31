@@ -24,7 +24,6 @@ from typing import List
 
 
 class _PointnetSAModuleBase(nn.Module):
-
     def __init__(self):
         super().__init__()
         self.npoint = None
@@ -64,10 +63,10 @@ class _PointnetSAModuleBase(nn.Module):
 
             new_features = self.mlps[i](
                 new_features)  # (B, mlp[-1], npoint, nsample)
-            new_features = F.max_pool2d(
-                new_features,
-                kernel_size=[1,
-                             new_features.size(3)])  # (B, mlp[-1], npoint, 1)
+            new_features = F.max_pool2d(new_features,
+                                        kernel_size=[
+                                            1, new_features.size(3)
+                                        ])  # (B, mlp[-1], npoint, 1)
             new_features = new_features.squeeze(-1)  # (B, mlp[-1], npoint)
 
             new_features_list.append(new_features)
@@ -91,7 +90,6 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
     bn : bool
         Use batchnorm
     """
-
     def __init__(self,
                  *,
                  npoint: int,
@@ -112,12 +110,12 @@ class PointnetSAModuleMSG(_PointnetSAModuleBase):
             radius = radii[i]
             nsample = nsamples[i]
             self.groupers.append(
-                pointnet2_utils.QueryAndGroup(
-                    radius,
-                    nsample,
-                    use_xyz=use_xyz,
-                    sample_uniformly=sample_uniformly
-                ) if npoint is not None else pointnet2_utils.GroupAll(use_xyz))
+                pointnet2_utils.QueryAndGroup(radius,
+                                              nsample,
+                                              use_xyz=use_xyz,
+                                              sample_uniformly=sample_uniformly
+                                              )
+                if npoint is not None else pointnet2_utils.GroupAll(use_xyz))
             mlp_spec = mlps[i]
             if use_xyz:
                 mlp_spec[0] += 3
@@ -141,7 +139,6 @@ class PointnetSAModule(PointnetSAModuleMSG):
     bn : bool
         Use batchnorm
     """
-
     def __init__(self,
                  *,
                  mlp: List[int],
@@ -150,19 +147,17 @@ class PointnetSAModule(PointnetSAModuleMSG):
                  nsample: int = None,
                  bn: bool = True,
                  use_xyz: bool = True):
-        super().__init__(
-            mlps=[mlp],
-            npoint=npoint,
-            radii=[radius],
-            nsamples=[nsample],
-            bn=bn,
-            use_xyz=use_xyz)
+        super().__init__(mlps=[mlp],
+                         npoint=npoint,
+                         radii=[radius],
+                         nsamples=[nsample],
+                         bn=bn,
+                         use_xyz=use_xyz)
 
 
 class PointnetSAModuleVotes(nn.Module):
     """Modified based on _PointnetSAModuleBase and PointnetSAModuleMSG with
     extra support for returning point indices for getting their GT votes."""
-
     def __init__(
             self,
             *,
@@ -201,8 +196,8 @@ class PointnetSAModuleVotes(nn.Module):
                 sample_uniformly=sample_uniformly,
                 ret_unique_cnt=ret_unique_cnt)
         else:
-            self.grouper = pointnet2_utils.GroupAll(
-                use_xyz, ret_grouped_xyz=True)
+            self.grouper = pointnet2_utils.GroupAll(use_xyz,
+                                                    ret_grouped_xyz=True)
 
         mlp_spec = mlp
         if use_xyz and len(mlp_spec) > 0:
@@ -253,15 +248,15 @@ class PointnetSAModuleVotes(nn.Module):
         new_features = self.mlp_module(
             grouped_features)  # (B, mlp[-1], npoint, nsample)
         if self.pooling == 'max':
-            new_features = F.max_pool2d(
-                new_features,
-                kernel_size=[1,
-                             new_features.size(3)])  # (B, mlp[-1], npoint, 1)
+            new_features = F.max_pool2d(new_features,
+                                        kernel_size=[
+                                            1, new_features.size(3)
+                                        ])  # (B, mlp[-1], npoint, 1)
         elif self.pooling == 'avg':
-            new_features = F.avg_pool2d(
-                new_features,
-                kernel_size=[1,
-                             new_features.size(3)])  # (B, mlp[-1], npoint, 1)
+            new_features = F.avg_pool2d(new_features,
+                                        kernel_size=[
+                                            1, new_features.size(3)
+                                        ])  # (B, mlp[-1], npoint, 1)
         elif self.pooling == 'rbf':
             # Use radial basis function kernel for weighted sum of features (normalized by nsample and sigma)
             # Ref: https://en.wikipedia.org/wiki/Radial_basis_function_kernel
@@ -281,7 +276,6 @@ class PointnetSAModuleVotes(nn.Module):
 class PointnetSAModuleMSGVotes(nn.Module):
     """Modified based on _PointnetSAModuleBase and PointnetSAModuleMSG with
     extra support for returning point indices for getting their GT votes."""
-
     def __init__(self,
                  *,
                  mlps: List[List[int]],
@@ -302,12 +296,12 @@ class PointnetSAModuleMSGVotes(nn.Module):
             radius = radii[i]
             nsample = nsamples[i]
             self.groupers.append(
-                pointnet2_utils.QueryAndGroup(
-                    radius,
-                    nsample,
-                    use_xyz=use_xyz,
-                    sample_uniformly=sample_uniformly
-                ) if npoint is not None else pointnet2_utils.GroupAll(use_xyz))
+                pointnet2_utils.QueryAndGroup(radius,
+                                              nsample,
+                                              use_xyz=use_xyz,
+                                              sample_uniformly=sample_uniformly
+                                              )
+                if npoint is not None else pointnet2_utils.GroupAll(use_xyz))
             mlp_spec = mlps[i]
             if use_xyz:
                 mlp_spec[0] += 3
@@ -351,10 +345,10 @@ class PointnetSAModuleMSGVotes(nn.Module):
                 xyz, new_xyz, features)  # (B, C, npoint, nsample)
             new_features = self.mlps[i](
                 new_features)  # (B, mlp[-1], npoint, nsample)
-            new_features = F.max_pool2d(
-                new_features,
-                kernel_size=[1,
-                             new_features.size(3)])  # (B, mlp[-1], npoint, 1)
+            new_features = F.max_pool2d(new_features,
+                                        kernel_size=[
+                                            1, new_features.size(3)
+                                        ])  # (B, mlp[-1], npoint, 1)
             new_features = new_features.squeeze(-1)  # (B, mlp[-1], npoint)
 
             new_features_list.append(new_features)
@@ -372,7 +366,6 @@ class PointnetFPModule(nn.Module):
     bn : bool
         Use batchnorm
     """
-
     def __init__(self, *, mlp: List[int], bn: bool = True):
         super().__init__()
         self.mlp = pt_utils.SharedMLP(mlp, bn=bn)
@@ -425,7 +418,6 @@ class PointnetFPModule(nn.Module):
 class PointnetLFPModuleMSG(nn.Module):
     """Modified based on _PointnetSAModuleBase and PointnetSAModuleMSG
     learnable feature propagation layer."""
-
     def __init__(self,
                  *,
                  mlps: List[List[int]],
@@ -485,9 +477,10 @@ class PointnetLFPModuleMSG(nn.Module):
                                             features1)  # (B, C1, N2, nsample)
             new_features = self.mlps[i](
                 new_features)  # (B, mlp[-1], N2, nsample)
-            new_features = F.max_pool2d(
-                new_features,
-                kernel_size=[1, new_features.size(3)])  # (B, mlp[-1], N2, 1)
+            new_features = F.max_pool2d(new_features,
+                                        kernel_size=[1,
+                                                     new_features.size(3)
+                                                     ])  # (B, mlp[-1], N2, 1)
             new_features = new_features.squeeze(-1)  # (B, mlp[-1], N2)
 
             if features2 is not None:
@@ -509,8 +502,10 @@ if __name__ == '__main__':
     xyz = Variable(torch.randn(2, 9, 3).cuda(), requires_grad=True)
     xyz_feats = Variable(torch.randn(2, 9, 6).cuda(), requires_grad=True)
 
-    test_module = PointnetSAModuleMSG(
-        npoint=2, radii=[5.0, 10.0], nsamples=[6, 3], mlps=[[9, 3], [9, 6]])
+    test_module = PointnetSAModuleMSG(npoint=2,
+                                      radii=[5.0, 10.0],
+                                      nsamples=[6, 3],
+                                      mlps=[[9, 3], [9, 6]])
     test_module.cuda()
     print(test_module(xyz, xyz_feats))
 

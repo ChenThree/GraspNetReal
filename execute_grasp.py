@@ -19,7 +19,7 @@ from GraspToolBox.utils.calibration_helpers import get_intrinsics_matrix
 # gripper control
 from GraspToolBox.utils.gripper_helpers import GripperController
 from GraspToolBox.utils.image_helpers import KinectCamera, RealsenseCamera
-from GraspToolBox.utils.ord_helpers import q_to_euler, q_to_matrix, matrix_to_q, ord_camera_to_base, rot_camera_to_q_base, ord_camera_to_hand, ord_hand_to_base
+from GraspToolBox.utils.ord_helpers import euler_to_q, q_to_euler, q_to_matrix, matrix_to_q, ord_camera_to_base, rot_camera_to_q_base, ord_camera_to_hand, ord_hand_to_base
 # robot control
 from GraspToolBox.utils.robot_heplers import RobotController
 
@@ -28,28 +28,30 @@ def parse_args():
     # get args
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', required=True, help='Data source')
-    parser.add_argument(
-        '--move_robot', action='store_true', help='Whether move robot')
-    parser.add_argument(
-        '--checkpoint_path', required=True, help='Model checkpoint path')
-    parser.add_argument(
-        '--num_point',
-        type=int,
-        default=20000,
-        help='Point Number [default: 20000]')
-    parser.add_argument(
-        '--num_view', type=int, default=300, help='View Number [default: 300]')
+    parser.add_argument('--move_robot',
+                        action='store_true',
+                        help='Whether move robot')
+    parser.add_argument('--checkpoint_path',
+                        required=True,
+                        help='Model checkpoint path')
+    parser.add_argument('--num_point',
+                        type=int,
+                        default=20000,
+                        help='Point Number [default: 20000]')
+    parser.add_argument('--num_view',
+                        type=int,
+                        default=300,
+                        help='View Number [default: 300]')
     parser.add_argument(
         '--collision_thresh',
         type=float,
         default=0.001,
         help='Collision Threshold in collision detection [default: 0.01]')
-    parser.add_argument(
-        '--voxel_size',
-        type=float,
-        default=0.005,
-        help='Voxel Size to process point clouds' +
-        'before collision detection [default: 0.005]')
+    parser.add_argument('--voxel_size',
+                        type=float,
+                        default=0.005,
+                        help='Voxel Size to process point clouds' +
+                        'before collision detection [default: 0.005]')
     parser.add_argument(
         '--approach_dist',
         type=float,
@@ -61,15 +63,14 @@ def parse_args():
 
 def get_net():
     # Init the model
-    net = GraspNet(
-        input_feature_dim=0,
-        num_view=cfgs.num_view,
-        num_angle=12,
-        num_depth=4,
-        cylinder_radius=0.05,
-        hmin=-0.02,
-        hmax_list=[0.01, 0.02, 0.03, 0.04],
-        is_training=False)
+    net = GraspNet(input_feature_dim=0,
+                   num_view=cfgs.num_view,
+                   num_angle=12,
+                   num_depth=4,
+                   cylinder_radius=0.05,
+                   hmin=-0.02,
+                   hmax_list=[0.01, 0.02, 0.03, 0.04],
+                   is_training=False)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     net.to(device)
     # Load checkpoint
@@ -92,9 +93,8 @@ def get_and_process_data(camera='Kinect',
     if cloud is None:
         # load data
         if color is None:
-            color = np.array(
-                Image.open(os.path.join(data_dir, 'color.png')),
-                dtype=np.float32) / 255.0
+            color = np.array(Image.open(os.path.join(data_dir, 'color.png')),
+                             dtype=np.float32) / 255.0
         if depth is None:
             depth = np.array(Image.open(os.path.join(data_dir, 'depth.png')))
 
@@ -111,8 +111,9 @@ def get_and_process_data(camera='Kinect',
         # generate cloud
         camera = CameraInfo(1280.0, 720.0, intrinsic[0][0], intrinsic[1][1],
                             intrinsic[0][2], intrinsic[1][2], factor_depth)
-        cloud = create_point_cloud_from_depth_image(
-            depth, camera, organized=True)
+        cloud = create_point_cloud_from_depth_image(depth,
+                                                    camera,
+                                                    organized=True)
     # get mask
     try:
         if camera == 'kinect':
@@ -130,14 +131,14 @@ def get_and_process_data(camera='Kinect',
 
     # sample points
     if len(cloud_masked) >= cfgs.num_point:
-        idxs = np.random.choice(
-            len(cloud_masked), cfgs.num_point, replace=False)
+        idxs = np.random.choice(len(cloud_masked),
+                                cfgs.num_point,
+                                replace=False)
     else:
         idxs1 = np.arange(len(cloud_masked))
-        idxs2 = np.random.choice(
-            len(cloud_masked),
-            cfgs.num_point - len(cloud_masked),
-            replace=True)
+        idxs2 = np.random.choice(len(cloud_masked),
+                                 cfgs.num_point - len(cloud_masked),
+                                 replace=True)
         idxs = np.concatenate([idxs1, idxs2], axis=0)
     cloud_sampled = cloud_masked[idxs]
     color_sampled = color_masked[idxs]
@@ -170,10 +171,9 @@ def get_grasps(net, end_points):
 
 def collision_detection(gg, cloud):
     mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size)
-    collision_mask = mfcdetector.detect(
-        gg,
-        approach_dist=cfgs.approach_dist,
-        collision_thresh=cfgs.collision_thresh)
+    collision_mask = mfcdetector.detect(gg,
+                                        approach_dist=cfgs.approach_dist,
+                                        collision_thresh=cfgs.collision_thresh)
     gg = gg[~collision_mask]
     return gg
 
@@ -216,11 +216,10 @@ def get_grasp_from_camera(camera_type='kinect', show_figure=False):
     print('-' * 20 + 'network get' + '-' * 20)
 
     # process data
-    end_points, cloud = get_and_process_data(
-        camera=camera_type,
-        color=image_rgb,
-        depth=image_depth,
-        cloud=pointcloud)
+    end_points, cloud = get_and_process_data(camera=camera_type,
+                                             color=image_rgb,
+                                             depth=image_depth,
+                                             cloud=pointcloud)
     print('-' * 20 + 'image processed' + '-' * 20)
 
     # get grasps
@@ -262,8 +261,15 @@ if __name__ == '__main__':
         data_dir = 'GraspToolBox/doc/example_data'
         grasps = get_grasp_from_file(data_dir, show_figure=True)
     else:
-        cloud, grasps = get_grasp_from_camera(
-            camera_type=cfgs.source, show_figure=False)
+        cloud, grasps = get_grasp_from_camera(camera_type=cfgs.source,
+                                              show_figure=False)
+    # fix score
+    for i in range(len(grasps)):
+        rot_in_camera = grasps[i].rotation_matrix
+        euler_in_base = q_to_euler(
+            rot_camera_to_q_base(cfgs.source, rot_in_camera))
+        k = np.abs(euler_in_base[0]) / 180
+        grasps.scores[i] = grasps.scores[i] * k
 
     # get grasp ords
     grasps.sort_by_score()
@@ -302,13 +308,26 @@ if __name__ == '__main__':
         # wait for confirm
         confirm = input('Input y/n for grasp executing: ')
         if confirm == 'y':
-            # move robot 
-            robot_controller.move_robot(rotation=q_in_base, pos=ord_in_base, v=0.05, a=0.3)
+            # move above first
+            robot_controller.move_robot(
+                rotation=euler_to_q(np.array([-180, 0, 0])),
+                pos=ord_in_base + np.array([0, 0, 0.4]),
+                v=0.05,
+                a=0.3)
+            # move to grasp
+            robot_controller.move_robot(rotation=q_in_base,
+                                        pos=ord_in_base,
+                                        v=0.05,
+                                        a=0.3)
             # close gripper
             gripper_controller.close_gripper()
-            # reset robot to starting point
+            # reset robot to grasp point
             robot_controller.reset_robot()
+            # move robot to grasp point
+            robot_controller.move_grasp_position()
             # wait for sometime
             time.sleep(2)
             # open gripper
             gripper_controller.open_gripper()
+            # reset robot to grasp point
+            robot_controller.reset_robot()

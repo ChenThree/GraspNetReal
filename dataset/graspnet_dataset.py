@@ -22,7 +22,6 @@ from data_utils import (CameraInfo, create_point_cloud_from_depth_image,
 
 
 class GraspNetDataset(Dataset):
-
     def __init__(self,
                  root,
                  valid_obj_idxs,
@@ -67,9 +66,8 @@ class GraspNetDataset(Dataset):
         self.metapath = []
         self.scenename = []
         self.frameid = []
-        for x in tqdm(
-                self.sceneIds,
-                desc='Loading data path and collision labels...'):
+        for x in tqdm(self.sceneIds,
+                      desc='Loading data path and collision labels...'):
             for img_num in range(256):
                 self.colorpath.append(
                     os.path.join(root, 'scenes', x, camera, 'rgb',
@@ -128,8 +126,8 @@ class GraspNetDataset(Dataset):
             return self.get_data(index)
 
     def get_data(self, index, return_raw_cloud=False):
-        color = np.array(
-            Image.open(self.colorpath[index]), dtype=np.float32) / 255.0
+        color = np.array(Image.open(self.colorpath[index]),
+                         dtype=np.float32) / 255.0
         depth = np.array(Image.open(self.depthpath[index]))
         seg = np.array(Image.open(self.labelpath[index]))
         meta = scio.loadmat(self.metapath[index])
@@ -144,8 +142,9 @@ class GraspNetDataset(Dataset):
                             intrinsic[0][2], intrinsic[1][2], factor_depth)
 
         # generate cloud
-        cloud = create_point_cloud_from_depth_image(
-            depth, camera, organized=True)
+        cloud = create_point_cloud_from_depth_image(depth,
+                                                    camera,
+                                                    organized=True)
 
         # get valid points
         depth_mask = (depth > 0)
@@ -158,8 +157,11 @@ class GraspNetDataset(Dataset):
                 os.path.join(self.root, 'scenes', scene, self.camera,
                              'cam0_wrt_table.npy'))
             trans = np.dot(align_mat, camera_poses[self.frameid[index]])
-            workspace_mask = get_workspace_mask(
-                cloud, seg, trans=trans, organized=True, outlier=0.02)
+            workspace_mask = get_workspace_mask(cloud,
+                                                seg,
+                                                trans=trans,
+                                                organized=True,
+                                                outlier=0.02)
             mask = (depth_mask & workspace_mask)
         else:
             mask = depth_mask
@@ -171,14 +173,14 @@ class GraspNetDataset(Dataset):
 
         # sample points
         if len(cloud_masked) >= self.num_points:
-            idxs = np.random.choice(
-                len(cloud_masked), self.num_points, replace=False)
+            idxs = np.random.choice(len(cloud_masked),
+                                    self.num_points,
+                                    replace=False)
         else:
             idxs1 = np.arange(len(cloud_masked))
-            idxs2 = np.random.choice(
-                len(cloud_masked),
-                self.num_points - len(cloud_masked),
-                replace=True)
+            idxs2 = np.random.choice(len(cloud_masked),
+                                     self.num_points - len(cloud_masked),
+                                     replace=True)
             idxs = np.concatenate([idxs1, idxs2], axis=0)
         cloud_sampled = cloud_masked[idxs]
         color_sampled = color_masked[idxs]
@@ -190,8 +192,8 @@ class GraspNetDataset(Dataset):
         return ret_dict
 
     def get_data_label(self, index):
-        color = np.array(
-            Image.open(self.colorpath[index]), dtype=np.float32) / 255.0
+        color = np.array(Image.open(self.colorpath[index]),
+                         dtype=np.float32) / 255.0
         depth = np.array(Image.open(self.depthpath[index]))
         seg = np.array(Image.open(self.labelpath[index]))
         meta = scio.loadmat(self.metapath[index])
@@ -208,8 +210,9 @@ class GraspNetDataset(Dataset):
                             intrinsic[0][2], intrinsic[1][2], factor_depth)
 
         # generate cloud
-        cloud = create_point_cloud_from_depth_image(
-            depth, camera, organized=True)
+        cloud = create_point_cloud_from_depth_image(depth,
+                                                    camera,
+                                                    organized=True)
 
         # get valid points
         depth_mask = (depth > 0)
@@ -222,8 +225,11 @@ class GraspNetDataset(Dataset):
                 os.path.join(self.root, 'scenes', scene, self.camera,
                              'cam0_wrt_table.npy'))
             trans = np.dot(align_mat, camera_poses[self.frameid[index]])
-            workspace_mask = get_workspace_mask(
-                cloud, seg, trans=trans, organized=True, outlier=0.02)
+            workspace_mask = get_workspace_mask(cloud,
+                                                seg,
+                                                trans=trans,
+                                                organized=True,
+                                                outlier=0.02)
             mask = (depth_mask & workspace_mask)
         else:
             mask = depth_mask
@@ -233,14 +239,14 @@ class GraspNetDataset(Dataset):
 
         # sample points
         if len(cloud_masked) >= self.num_points:
-            idxs = np.random.choice(
-                len(cloud_masked), self.num_points, replace=False)
+            idxs = np.random.choice(len(cloud_masked),
+                                    self.num_points,
+                                    replace=False)
         else:
             idxs1 = np.arange(len(cloud_masked))
-            idxs2 = np.random.choice(
-                len(cloud_masked),
-                self.num_points - len(cloud_masked),
-                replace=True)
+            idxs2 = np.random.choice(len(cloud_masked),
+                                     self.num_points - len(cloud_masked),
+                                     replace=True)
             idxs = np.concatenate([idxs1, idxs2], axis=0)
         cloud_sampled = cloud_masked[idxs]
         color_sampled = color_masked[idxs]
@@ -275,10 +281,10 @@ class GraspNetDataset(Dataset):
                 tolerance = tolerance[visible_mask]
                 collision = collision[visible_mask]
 
-            idxs = np.random.choice(
-                len(points),
-                min(max(int(len(points) / 4), 300), len(points)),
-                replace=False)
+            idxs = np.random.choice(len(points),
+                                    min(max(int(len(points) / 4), 300),
+                                        len(points)),
+                                    replace=False)
             grasp_points_list.append(points[idxs])
             grasp_offsets_list.append(offsets[idxs])
             collision = collision[idxs].copy()
@@ -343,14 +349,13 @@ def collate_fn(batch):
 if __name__ == '__main__':
     root = '/data/Benchmark/graspnet'
     valid_obj_idxs, grasp_labels = load_grasp_labels(root)
-    train_dataset = GraspNetDataset(
-        root,
-        valid_obj_idxs,
-        grasp_labels,
-        split='train',
-        remove_outlier=True,
-        remove_invisible=True,
-        num_points=20000)
+    train_dataset = GraspNetDataset(root,
+                                    valid_obj_idxs,
+                                    grasp_labels,
+                                    split='train',
+                                    remove_outlier=True,
+                                    remove_invisible=True,
+                                    num_points=20000)
     print(len(train_dataset))
 
     end_points = train_dataset[233]

@@ -95,8 +95,8 @@ def compute_grasp_loss(end_points, use_template_in_training=True):
     top_view_grasp_angles = batch_grasp_offset[:, :, :, :, 0]  #(B, Ns, A, D)
     top_view_grasp_depths = batch_grasp_offset[:, :, :, :, 1]  #(B, Ns, A, D)
     top_view_grasp_widths = batch_grasp_offset[:, :, :, :, 2]  #(B, Ns, A, D)
-    target_labels_inds = torch.argmax(
-        batch_grasp_label, dim=2, keepdim=True)  # (B, Ns, 1, D)
+    target_labels_inds = torch.argmax(batch_grasp_label, dim=2,
+                                      keepdim=True)  # (B, Ns, 1, D)
     target_labels = torch.gather(batch_grasp_label, 2,
                                  target_labels_inds).squeeze(2)  # (B, Ns, D)
     target_angles = torch.gather(top_view_grasp_angles, 2,
@@ -117,8 +117,8 @@ def compute_grasp_loss(end_points, use_template_in_training=True):
     grasp_score = torch.gather(end_points['grasp_score_pred'], 1,
                                target_labels_inds_).squeeze(1)
     grasp_score_loss = huber_loss(grasp_score - target_labels, delta=1.0)
-    grasp_score_loss = torch.sum(grasp_score_loss * loss_mask) / (
-        loss_mask.sum() + 1e-6)
+    grasp_score_loss = torch.sum(
+        grasp_score_loss * loss_mask) / (loss_mask.sum() + 1e-6)
     end_points['loss/stage2_grasp_score_loss'] = grasp_score_loss
 
     # 2. inplane rotation cls loss
@@ -127,8 +127,8 @@ def compute_grasp_loss(end_points, use_template_in_training=True):
     grasp_angle_class_score = end_points['grasp_angle_cls_pred']
     grasp_angle_class_loss = criterion_grasp_angle_class(
         grasp_angle_class_score, target_angles_cls)
-    grasp_angle_class_loss = torch.sum(grasp_angle_class_loss * loss_mask) / (
-        loss_mask.sum() + 1e-6)
+    grasp_angle_class_loss = torch.sum(
+        grasp_angle_class_loss * loss_mask) / (loss_mask.sum() + 1e-6)
     end_points['loss/stage2_grasp_angle_class_loss'] = grasp_angle_class_loss
     grasp_angle_class_pred = torch.argmax(grasp_angle_class_score, 1)
     end_points['stage2_grasp_angle_class_acc/0_degree'] = (
@@ -150,8 +150,8 @@ def compute_grasp_loss(end_points, use_template_in_training=True):
                                     target_labels_inds_).squeeze(1)
     grasp_width_loss = huber_loss(
         (grasp_width_pred - target_widths) / GRASP_MAX_WIDTH, delta=1)
-    grasp_width_loss = torch.sum(grasp_width_loss * loss_mask) / (
-        loss_mask.sum() + 1e-6)
+    grasp_width_loss = torch.sum(
+        grasp_width_loss * loss_mask) / (loss_mask.sum() + 1e-6)
     end_points['loss/stage2_grasp_width_loss'] = grasp_width_loss
 
     # 4. tolerance reg loss
@@ -160,8 +160,8 @@ def compute_grasp_loss(end_points, use_template_in_training=True):
     grasp_tolerance_loss = huber_loss(
         (grasp_tolerance_pred - target_tolerance) / GRASP_MAX_TOLERANCE,
         delta=1)
-    grasp_tolerance_loss = torch.sum(grasp_tolerance_loss * loss_mask) / (
-        loss_mask.sum() + 1e-6)
+    grasp_tolerance_loss = torch.sum(
+        grasp_tolerance_loss * loss_mask) / (loss_mask.sum() + 1e-6)
     end_points['loss/stage2_grasp_tolerance_loss'] = grasp_tolerance_loss
 
     grasp_loss = grasp_score_loss + grasp_angle_class_loss\
