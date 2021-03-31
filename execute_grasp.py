@@ -8,20 +8,20 @@ import torch
 from graspnetAPI import GraspGroup
 from PIL import Image
 
-from GraspNetToolBox.config import KINECT_MASK_IAMGE_PATH, REALSENSE_MASK_IAMGE_PATH
+from GraspToolBox.config import KINECT_MASK_IAMGE_PATH, REALSENSE_MASK_IAMGE_PATH
 # network
-from GraspNetToolBox.models.graspnet import GraspNet, pred_decode
-from GraspNetToolBox.utils.calibration_helpers import get_intrinsics_matrix
+from models.graspnet import GraspNet, pred_decode
 # collision_detector
-from GraspNetToolBox.utils.collision_detector import ModelFreeCollisionDetector
+from utils.collision_detector import ModelFreeCollisionDetector
 # data process tools
-from GraspNetToolBox.utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
+from utils.data_utils import CameraInfo, create_point_cloud_from_depth_image
+from GraspToolBox.utils.calibration_helpers import get_intrinsics_matrix
 # gripper control
-from GraspNetToolBox.utils.gripper_helpers import GripperController
-from GraspNetToolBox.utils.image_helpers import KinectCamera, RealsenseCamera
-from GraspNetToolBox.utils.ord_helpers import q_to_euler, q_to_matrix, matrix_to_q, ord_camera_to_base, rot_camera_to_q_base, ord_camera_to_hand, ord_hand_to_base
+from GraspToolBox.utils.gripper_helpers import GripperController
+from GraspToolBox.utils.image_helpers import KinectCamera, RealsenseCamera
+from GraspToolBox.utils.ord_helpers import q_to_euler, q_to_matrix, matrix_to_q, ord_camera_to_base, rot_camera_to_q_base, ord_camera_to_hand, ord_hand_to_base
 # robot control
-from GraspNetToolBox.utils.robot_heplers import RobotController
+from GraspToolBox.utils.robot_heplers import RobotController
 
 
 def parse_args():
@@ -259,7 +259,7 @@ if __name__ == '__main__':
 
     # get grasps
     if cfgs.source == 'file':
-        data_dir = 'GraspNetToolBox/doc/example_data'
+        data_dir = 'GraspToolBox/doc/example_data'
         grasps = get_grasp_from_file(data_dir, show_figure=True)
     else:
         cloud, grasps = get_grasp_from_camera(
@@ -288,7 +288,7 @@ if __name__ == '__main__':
         rot_in_camera = best_grasp.rotation_matrix
 
         ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
-        q_in_base = rot_camera_to_q_base(rot_in_camera)
+        q_in_base = rot_camera_to_q_base(cfgs.source, rot_in_camera)
         # trans rotation matrix to quaternion
         print('*' * 100)
         print('grasp ord:', ord_in_base)
