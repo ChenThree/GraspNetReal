@@ -109,16 +109,15 @@ def rot_camera_to_q_base(rot_in_camera):
     Returns:
         q_in_base (np.array): quat
     """
-    q_in_base = matrix_to_q(np.matmul(inv_matrix_kinect, rot_in_camera))
-    euler_in_base = q_to_euler(q_in_base)
-    # offset
-    euler_in_base[0] -= 90
-    if euler_in_base[0] < -180:
-        euler_in_base[0] += 360
-    euler_in_base[1] -= 90
-    if euler_in_base[1] < -180:
-        euler_in_base[1] += 360
-    return euler_to_q(euler_in_base)
+    # origin gripper along x axis
+    euler_origin = np.array([-90, 0, -90])
+    q_origin = euler_to_q(euler_origin)
+    # get q_in camera
+    q_in_camera = matrix_to_q(rot_in_camera)
+    # rotate to q_in_base
+    q_in_base = qmul(matrix_to_q(inv_matrix_kinect), q_in_camera)
+    q_in_base = qmul(q_in_base, q_origin)
+    return q_in_base
 
 
 def ord_camera_to_base(source, ord_in_camera):
@@ -169,16 +168,23 @@ def ord_hand_to_base(ord_in_hand):
 
 
 if __name__ == '__main__':
-    print(trans_matrix_kinect)
+    print(q_to_euler(matrix_to_q(trans_matrix_kinect)))
+    # down [-180, 0, 0]
     matrix_in_camera = np.array(
         [[-2.7900429e-02, 2.3445182e-02, 9.9933565e-01],
          [7.6507765e-01, -6.4290589e-01, 3.6443252e-02],
-         [6.4333332e-01, 7.6558614e-01, -3.3464833e-08]])  # down
+         [6.4333332e-01, 7.6558614e-01, -3.3464833e-08]])
+    # heng [-180, 0, 90]
+    # matrix_in_camera = np.array([[0.02277477, -0.9989326, -0.04018656],
+    #                              [0.49252543, 0.04619145, -0.86907136],
+    #                              [0.87, 0., 0.4930517]])
     q_in_camera = matrix_to_q(matrix_in_camera)
+    print('q in camera:')
+    print(q_in_camera)
     # print(np.matmul(matrix_in_camera, matrix_in_camera.T))
-    print('q in base:')
     q_in_base = rot_camera_to_q_base(matrix_in_camera)
+    print('q in base:')
     print(q_in_base)
     print(q_to_euler(q_in_base))
     q_in_base = qmul(q_kinect, q_in_camera)
-    print(q_to_euler(q_in_base))
+    print('raw ==', q_to_euler(q_in_base))

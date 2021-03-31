@@ -43,6 +43,9 @@ class RobotController():
         self.wait_for_movement()
         print('move to given point completed')
 
+    def set_coordinate_origin(self, ori):
+        self.controller.set_coordinate_origin(ori=ori)
+
 
 if __name__ == '__main__':
     from GraspNetToolBox.utils.ord_helpers import q_to_euler, euler_to_q
@@ -54,9 +57,17 @@ if __name__ == '__main__':
     print('now_rot ==', q)
     euler = q_to_euler(q)
     print(euler)
-    euler = np.array([-180, 0, 0])
+    euler = np.array([-179.93519185, -4.53879681, -2.04890715])
     q = euler_to_q(euler)
     print(q)
-    controller.reset_robot()
+    # controller.reset_robot()
     # base
-    # controller.move_robot(rotation=q)
+    controller.move_robot(rotation=q)
+    # ori = [[0.701479089333879, -0.49627869568818056, 0.5928481716284633],
+    #        [
+    #            0.2830117195130695, -0.6518756969714905, -0.6526927081309741,
+    #            0.2625922144101839
+    #        ]]
+    # controller.set_coordinate_origin(ori=ori)
+    # controller.move_robot(
+    #     rotation=[0.28687698, 0.63541435, 0.31023961, 0.64629837])
