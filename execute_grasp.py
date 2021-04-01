@@ -268,8 +268,11 @@ if __name__ == '__main__':
         rot_in_camera = grasps[i].rotation_matrix
         euler_in_base = q_to_euler(
             rot_camera_to_q_base(cfgs.source, rot_in_camera))
+        # print(euler_in_base)
         k = np.abs(euler_in_base[0]) / 180
         grasps.scores[i] = grasps.scores[i] * k
+
+    vis_grasps(grasps, cloud)
 
     # get grasp ords
     grasps.sort_by_score()
@@ -277,6 +280,7 @@ if __name__ == '__main__':
     for grasp in grasps:
         ord_in_camera = grasp.translation
         ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
+        print(ord_in_base)
         # filter grasps that is too low
         if ord_in_base[2] > 0.05 and ord_in_base[2] < 0.5:
             filtered_grasps.append(grasp)
