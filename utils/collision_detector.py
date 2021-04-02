@@ -28,7 +28,6 @@ class ModelFreeCollisionDetector():
                                         collision_thresh=0.05,
                                         return_empty_grasp=True, empty_thresh=0.01, return_ious=True)
     """
-
     def __init__(self, scene_points, voxel_size=0.005):
         self.finger_width = 0.01
         self.finger_length = 0.06
@@ -136,8 +135,8 @@ class ModelFreeCollisionDetector():
             inner_mask = (mask1 & mask2 & (~mask4) & (~mask6))
             inner_volume = (heights * self.finger_length * widths /
                             (self.voxel_size**3)).reshape(-1)
-            empty_mask = (
-                inner_mask.sum(axis=-1) / inner_volume < empty_thresh)
+            empty_mask = (inner_mask.sum(axis=-1) / inner_volume <
+                          empty_thresh)
             ret_value.append(empty_mask)
         if return_ious:
             left_iou = left_mask.sum(axis=1) / (left_right_volume + 1e-6)

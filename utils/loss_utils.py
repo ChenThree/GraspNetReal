@@ -89,10 +89,12 @@ def batch_viewpoint_params_to_matrix(batch_towards, batch_angle):
             rotation matrices in batch
     """
     axis_x = batch_towards
-    ones = torch.ones(
-        axis_x.shape[0], dtype=axis_x.dtype, device=axis_x.device)
-    zeros = torch.zeros(
-        axis_x.shape[0], dtype=axis_x.dtype, device=axis_x.device)
+    ones = torch.ones(axis_x.shape[0],
+                      dtype=axis_x.dtype,
+                      device=axis_x.device)
+    zeros = torch.zeros(axis_x.shape[0],
+                        dtype=axis_x.dtype,
+                        device=axis_x.device)
     axis_y = torch.stack([-axis_x[:, 1], axis_x[:, 0], zeros], dim=-1)
     mask_y = (torch.norm(axis_y, dim=-1) == 0)
     axis_y[mask_y, 1] = 1

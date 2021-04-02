@@ -25,7 +25,6 @@ from .modules import ApproachNet, CloudCrop, OperationNet, ToleranceNet
 
 
 class GraspNetStage1(nn.Module):
-
     def __init__(self, input_feature_dim=0, num_view=300):
         super().__init__()
         self.backbone = Pointnet2Backbone(input_feature_dim)
@@ -40,7 +39,6 @@ class GraspNetStage1(nn.Module):
 
 
 class GraspNetStage2(nn.Module):
-
     def __init__(self,
                  num_angle=12,
                  num_depth=4,
@@ -74,7 +72,6 @@ class GraspNetStage2(nn.Module):
 
 
 class GraspNet(nn.Module):
-
     def __init__(self,
                  input_feature_dim=0,
                  num_view=300,

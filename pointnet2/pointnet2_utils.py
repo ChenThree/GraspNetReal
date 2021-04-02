@@ -32,7 +32,6 @@ if False:
 
 
 class RandomDropout(nn.Module):
-
     def __init__(self, p=0.5, inplace=False):
         super(RandomDropout, self).__init__()
         self.p = p
@@ -45,7 +44,6 @@ class RandomDropout(nn.Module):
 
 
 class FurthestPointSampling(Function):
-
     @staticmethod
     def forward(ctx, xyz, npoint):
         # type: (Any, torch.Tensor, int) -> torch.Tensor
@@ -76,7 +74,6 @@ furthest_point_sample = FurthestPointSampling.apply
 
 
 class GatherOperation(Function):
-
     @staticmethod
     def forward(ctx, features, idx):
         # type: (Any, torch.Tensor, torch.Tensor) -> torch.Tensor
@@ -114,7 +111,6 @@ gather_operation = GatherOperation.apply
 
 
 class ThreeNN(Function):
-
     @staticmethod
     def forward(ctx, unknown, known):
         # type: (Any, torch.Tensor, torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]
@@ -147,7 +143,6 @@ three_nn = ThreeNN.apply
 
 
 class ThreeInterpolate(Function):
-
     @staticmethod
     def forward(ctx, features, idx, weight):
         # type(Any, torch.Tensor, torch.Tensor, torch.Tensor) -> Torch.Tensor
@@ -204,7 +199,6 @@ three_interpolate = ThreeInterpolate.apply
 
 
 class GroupingOperation(Function):
-
     @staticmethod
     def forward(ctx, features, idx):
         # type: (Any, torch.Tensor, torch.Tensor) -> torch.Tensor
@@ -256,7 +250,6 @@ grouping_operation = GroupingOperation.apply
 
 
 class BallQuery(Function):
-
     @staticmethod
     def forward(ctx, radius, nsample, xyz, new_xyz):
         # type: (Any, float, int, torch.Tensor, torch.Tensor) -> torch.Tensor
@@ -299,7 +292,6 @@ class QueryAndGroup(nn.Module):
     nsample : int32
         Maximum number of features to gather in the ball
     """
-
     def __init__(self,
                  radius,
                  nsample,
@@ -344,10 +336,10 @@ class QueryAndGroup(nn.Module):
                     unique_ind = torch.unique(idx[i_batch, i_region, :])
                     num_unique = unique_ind.shape[0]
                     unique_cnt[i_batch, i_region] = num_unique
-                    sample_ind = torch.randint(
-                        0,
-                        num_unique, (self.nsample - num_unique, ),
-                        dtype=torch.long)
+                    sample_ind = torch.randint(0,
+                                               num_unique,
+                                               (self.nsample - num_unique, ),
+                                               dtype=torch.long)
                     all_ind = torch.cat((unique_ind, unique_ind[sample_ind]))
                     idx[i_batch, i_region, :] = all_ind
 
@@ -388,7 +380,6 @@ class GroupAll(nn.Module):
     Parameters
     ---------
     """
-
     def __init__(self, use_xyz=True, ret_grouped_xyz=False):
         # type: (GroupAll, bool) -> None
         super(GroupAll, self).__init__()
@@ -430,7 +421,6 @@ class GroupAll(nn.Module):
 
 
 class CylinderQuery(Function):
-
     @staticmethod
     def forward(ctx, radius, hmin, hmax, nsample, xyz, new_xyz, rot):
         # type: (Any, float, float, float, int, torch.Tensor, torch.Tensor, torch.Tensor) -> torch.Tensor
@@ -481,7 +471,6 @@ class CylinderQueryAndGroup(nn.Module):
     nsample : int32
         Maximum number of features to gather in the ball
     """
-
     def __init__(self,
                  radius,
                  hmin,
@@ -535,10 +524,10 @@ class CylinderQueryAndGroup(nn.Module):
                     unique_ind = torch.unique(idx[i_batch, i_region, :])
                     num_unique = unique_ind.shape[0]
                     unique_cnt[i_batch, i_region] = num_unique
-                    sample_ind = torch.randint(
-                        0,
-                        num_unique, (self.nsample - num_unique, ),
-                        dtype=torch.long)
+                    sample_ind = torch.randint(0,
+                                               num_unique,
+                                               (self.nsample - num_unique, ),
+                                               dtype=torch.long)
                     all_ind = torch.cat((unique_ind, unique_ind[sample_ind]))
                     idx[i_batch, i_region, :] = all_ind
 

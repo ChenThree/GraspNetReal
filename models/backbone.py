@@ -26,50 +26,44 @@ class Pointnet2Backbone(nn.Module):
             Number of input channels in the feature descriptor for each point.
             e.g. 3 for RGB.
     """
-
     def __init__(self, input_feature_dim=0):
         super().__init__()
 
-        self.sa1 = PointnetSAModuleVotes(
-            npoint=2048,
-            radius=0.04,
-            nsample=64,
-            mlp=[input_feature_dim, 64, 64, 128],
-            use_xyz=True,
-            normalize_xyz=True)
+        self.sa1 = PointnetSAModuleVotes(npoint=2048,
+                                         radius=0.04,
+                                         nsample=64,
+                                         mlp=[input_feature_dim, 64, 64, 128],
+                                         use_xyz=True,
+                                         normalize_xyz=True)
 
-        self.sa2 = PointnetSAModuleVotes(
-            npoint=1024,
-            radius=0.1,
-            nsample=32,
-            mlp=[128, 128, 128, 256],
-            use_xyz=True,
-            normalize_xyz=True)
+        self.sa2 = PointnetSAModuleVotes(npoint=1024,
+                                         radius=0.1,
+                                         nsample=32,
+                                         mlp=[128, 128, 128, 256],
+                                         use_xyz=True,
+                                         normalize_xyz=True)
 
-        self.sa3 = PointnetSAModuleVotes(
-            npoint=512,
-            radius=0.2,
-            nsample=16,
-            mlp=[256, 128, 128, 256],
-            use_xyz=True,
-            normalize_xyz=True)
+        self.sa3 = PointnetSAModuleVotes(npoint=512,
+                                         radius=0.2,
+                                         nsample=16,
+                                         mlp=[256, 128, 128, 256],
+                                         use_xyz=True,
+                                         normalize_xyz=True)
 
-        self.sa4 = PointnetSAModuleVotes(
-            npoint=256,
-            radius=0.3,
-            nsample=16,
-            mlp=[256, 128, 128, 256],
-            use_xyz=True,
-            normalize_xyz=True)
+        self.sa4 = PointnetSAModuleVotes(npoint=256,
+                                         radius=0.3,
+                                         nsample=16,
+                                         mlp=[256, 128, 128, 256],
+                                         use_xyz=True,
+                                         normalize_xyz=True)
 
         self.fp1 = PointnetFPModule(mlp=[256 + 256, 256, 256])
         self.fp2 = PointnetFPModule(mlp=[256 + 256, 256, 256])
 
     def _break_up_pc(self, pc):
         xyz = pc[..., 0:3].contiguous()
-        features = (
-            pc[...,
-               3:].transpose(1, 2).contiguous() if pc.size(-1) > 3 else None)
+        features = (pc[..., 3:].transpose(1, 2).contiguous()
+                    if pc.size(-1) > 3 else None)
 
         return xyz, features
 

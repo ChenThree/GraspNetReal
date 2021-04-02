@@ -17,18 +17,18 @@ from data_utils import compute_point_dists
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_root', required=True, help='Dataset root')
-parser.add_argument(
-    '--pos_ratio_thresh',
-    type=float,
-    default=0.8,
-    help='Threshold of positive neighbor ratio[default: 0.8]')
-parser.add_argument(
-    '--mu_thresh',
-    type=float,
-    default=0.55,
-    help='Threshold of friction coefficient[default: 0.55]')
-parser.add_argument(
-    '--num_workers', type=int, default=50, help='Worker number[default: 50]')
+parser.add_argument('--pos_ratio_thresh',
+                    type=float,
+                    default=0.8,
+                    help='Threshold of positive neighbor ratio[default: 0.8]')
+parser.add_argument('--mu_thresh',
+                    type=float,
+                    default=0.55,
+                    help='Threshold of friction coefficient[default: 0.55]')
+parser.add_argument('--num_workers',
+                    type=int,
+                    default=50,
+                    help='Worker number[default: 50]')
 cfgs = parser.parse_args()
 
 save_path = 'tolerance'
@@ -58,8 +58,8 @@ def manager(obj_name, pool_size=8):
     for _ in range(pool_size):
         point_ind = work_list.pop(0)
         pool.append(
-            mp.Process(
-                target=worker, args=(obj_name, point_ind, params, tolerance)))
+            mp.Process(target=worker,
+                       args=(obj_name, point_ind, params, tolerance)))
     [p.start() for p in pool]
 
     # refill
@@ -68,9 +68,8 @@ def manager(obj_name, pool_size=8):
             if not p.is_alive():
                 pool.pop(ind)
                 point_ind = work_list.pop(0)
-                p = mp.Process(
-                    target=worker,
-                    args=(obj_name, point_ind, params, tolerance))
+                p = mp.Process(target=worker,
+                               args=(obj_name, point_ind, params, tolerance))
                 p.start()
                 pool.append(p)
                 process_cnt += 1

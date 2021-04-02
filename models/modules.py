@@ -21,7 +21,6 @@ from pointnet2_utils import CylinderQueryAndGroup
 
 
 class ApproachNet(nn.Module):
-
     def __init__(self, num_view, seed_feature_dim):
         """Approach vector estimation from seed point features.
 
@@ -64,8 +63,8 @@ class ApproachNet(nn.Module):
         end_points['view_score'] = view_score
 
         # print(view_score.min(), view_score.max(), view_score.mean())
-        top_view_scores, top_view_inds = torch.max(
-            view_score, dim=2)  # (B, num_seed)
+        top_view_scores, top_view_inds = torch.max(view_score,
+                                                   dim=2)  # (B, num_seed)
         top_view_inds_ = top_view_inds.view(B, num_seed, 1,
                                             1).expand(-1, -1, -1,
                                                       3).contiguous()
@@ -76,8 +75,9 @@ class ApproachNet(nn.Module):
         vp_xyz = torch.gather(template_views, 2,
                               top_view_inds_).squeeze(2)  #(B, num_seed, 3)
         vp_xyz_ = vp_xyz.view(-1, 3)
-        batch_angle = torch.zeros(
-            vp_xyz_.size(0), dtype=vp_xyz.dtype, device=vp_xyz.device)
+        batch_angle = torch.zeros(vp_xyz_.size(0),
+                                  dtype=vp_xyz.dtype,
+                                  device=vp_xyz.device)
         vp_rot = batch_viewpoint_params_to_matrix(-vp_xyz_, batch_angle).view(
             B, num_seed, 3, 3)
         end_points['grasp_top_view_inds'] = top_view_inds
@@ -104,7 +104,6 @@ class CloudCrop(nn.Module):
         hmax_list: [list of float]
             list of heights of the upper surface
     """
-
     def __init__(self,
                  nsample,
                  seed_feature_dim,
@@ -120,8 +119,11 @@ class CloudCrop(nn.Module):
         self.groupers = []
         for hmax in hmax_list:
             self.groupers.append(
-                CylinderQueryAndGroup(
-                    cylinder_radius, hmin, hmax, nsample, use_xyz=True))
+                CylinderQueryAndGroup(cylinder_radius,
+                                      hmin,
+                                      hmax,
+                                      nsample,
+                                      use_xyz=True))
         self.mlps = pt_utils.SharedMLP(mlps, bn=True)
 
     def forward(self, seed_xyz, pointcloud, vp_rot):
@@ -174,7 +176,6 @@ class OperationNet(nn.Module):
         num_depth: [int]
             number of gripper depth classes
     """
-
     def __init__(self, num_angle, num_depth):
         # Output:
         # scores(num_angle)
@@ -227,7 +228,6 @@ class ToleranceNet(nn.Module):
         num_depth: [int]
             number of gripper depth classes
     """
-
     def __init__(self, num_angle, num_depth):
         # Output:
         # tolerance (num_angle)
