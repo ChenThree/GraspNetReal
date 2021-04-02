@@ -314,7 +314,7 @@ if __name__ == '__main__':
         if confirm == 'y':
             # move above first
             robot_controller.move_robot(
-                rotation=euler_to_q(np.array([-180, 0, 0])),
+                rotation=euler_to_q(np.array([-180, 0, 180])),
                 pos=ord_in_base + np.array([0, 0, 0.4]),
                 v=0.05,
                 a=0.3)
@@ -325,6 +325,12 @@ if __name__ == '__main__':
                                         a=0.3)
             # close gripper
             gripper_controller.close_gripper()
+            # move above first
+            robot_controller.move_robot(
+                rotation=euler_to_q(np.array([-180, 0, 180])),
+                pos=ord_in_base + np.array([0, 0, 0.4]),
+                v=0.05,
+                a=0.3)
             # reset robot to grasp point
             robot_controller.reset_robot()
             # move robot to grasp point
