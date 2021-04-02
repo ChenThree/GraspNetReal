@@ -57,6 +57,14 @@ def parse_args():
         type=float,
         default=0.1,
         help='approach_dist for collision detect default: 0.1]')
+    parser.add_argument('--times',
+                        type=int,
+                        default=1,
+                        help='grasp times, default: 1')
+    parser.add_argument('--robot_velo',
+                        type=float,
+                        default=0.2,
+                        help='robot move velocity, default: 0.2')
     cfgs = parser.parse_args()
     return cfgs
 
@@ -250,94 +258,98 @@ if __name__ == '__main__':
         robot_controller = RobotController()
         gripper_controller = GripperController()
         # reset robot
-        robot_controller.reset_robot()
+        robot_controller.reset_robot(v=cfgs.robot_velo)
         # activate gripper
         gripper_controller.activate_gripper()
         # open gripper
         gripper_controller.open_gripper()
 
-    # get grasps
-    if cfgs.source == 'file':
-        data_dir = 'GraspToolBox/doc/example_data'
-        grasps = get_grasp_from_file(data_dir, show_figure=True)
-    else:
-        cloud, grasps = get_grasp_from_camera(camera_type=cfgs.source,
-                                              show_figure=False)
-    # fix score
-    for i in range(len(grasps)):
-        rot_in_camera = grasps[i].rotation_matrix
-        euler_in_base = q_to_euler(
-            rot_camera_to_q_base(cfgs.source, rot_in_camera))
-        # print(euler_in_base)
-        k = np.abs(euler_in_base[0]) / 180
-        grasps.scores[i] = grasps.scores[i] * k
+    # grasp for several times
+    for i in range(cfgs.times):
+        # reset robot
+        robot_controller.reset_robot(v=cfgs.robot_velo)
+        # get grasps
+        if cfgs.source == 'file':
+            data_dir = 'GraspToolBox/doc/example_data'
+            grasps = get_grasp_from_file(data_dir, show_figure=True)
+        else:
+            cloud, grasps = get_grasp_from_camera(camera_type=cfgs.source,
+                                                  show_figure=False)
+        # fix score
+        for i in range(len(grasps)):
+            rot_in_camera = grasps[i].rotation_matrix
+            euler_in_base = q_to_euler(
+                rot_camera_to_q_base(cfgs.source, rot_in_camera))
+            # print(euler_in_base)
+            k = np.abs(euler_in_base[0]) / 180
+            grasps.scores[i] = grasps.scores[i] * k
 
-    vis_grasps(grasps, cloud)
+        vis_grasps(grasps, cloud)
 
-    # get grasp ords
-    grasps.sort_by_score()
-    filtered_grasps = []
-    for grasp in grasps:
-        ord_in_camera = grasp.translation
-        ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
-        print(ord_in_base)
-        # filter grasps that is too low
-        if ord_in_base[2] > 0.05 and ord_in_base[2] < 0.5:
-            filtered_grasps.append(grasp)
+        # get grasp ords
+        grasps.sort_by_score()
+        filtered_grasps = []
+        for grasp in grasps:
+            ord_in_camera = grasp.translation
+            ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
+            print(ord_in_base)
+            # filter grasps that is too low
+            if ord_in_base[2] > 0.05 and ord_in_base[2] < 0.5:
+                filtered_grasps.append(grasp)
 
-    print('grasp count:', len(filtered_grasps))
+        print('grasp count:', len(filtered_grasps))
 
-    # get best grasp
-    best_grasp = filtered_grasps[0]
-    print(best_grasp)
+        # get best grasp
+        best_grasp = filtered_grasps[0]
+        print(best_grasp)
 
-    # execute real grasp if score is high enough
-    if best_grasp.score > 0.2 and cfgs.move_robot:
-        # ord and rot transform
-        ord_in_camera = best_grasp.translation
-        rot_in_camera = best_grasp.rotation_matrix
+        # execute real grasp if score is high enough
+        if best_grasp.score > 0.2 and cfgs.move_robot:
+            # ord and rot transform
+            ord_in_camera = best_grasp.translation
+            rot_in_camera = best_grasp.rotation_matrix
 
-        ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
-        q_in_base = rot_camera_to_q_base(cfgs.source, rot_in_camera)
-        # trans rotation matrix to quaternion
-        print('*' * 100)
-        print('grasp ord:', ord_in_base)
-        print('grasp rot:', q_in_base, ' euler:', q_to_euler(q_in_base))
-        print('*' * 100)
+            ord_in_base = ord_camera_to_base(cfgs.source, ord_in_camera)
+            q_in_base = rot_camera_to_q_base(cfgs.source, rot_in_camera)
+            # trans rotation matrix to quaternion
+            print('*' * 100)
+            print('grasp ord:', ord_in_base)
+            print('grasp rot:', q_in_base, ' euler:', q_to_euler(q_in_base))
+            print('*' * 100)
 
-        # transform and show final result
-        gripper = best_grasp.to_open3d_geometry()
-        o3d.visualization.draw_geometries([cloud, gripper])
+            # transform and show final result
+            gripper = best_grasp.to_open3d_geometry()
+            o3d.visualization.draw_geometries([cloud, gripper])
 
-        # wait for confirm
-        confirm = input('Input y/n for grasp executing: ')
-        if confirm == 'y':
-            # move above first
-            robot_controller.move_robot(
-                rotation=euler_to_q(np.array([-180, 0, 180])),
-                pos=ord_in_base + np.array([0, 0, 0.4]),
-                v=0.05,
-                a=0.3)
-            # move to grasp
-            robot_controller.move_robot(rotation=q_in_base,
-                                        pos=ord_in_base,
-                                        v=0.05,
-                                        a=0.3)
-            # close gripper
-            gripper_controller.close_gripper()
-            # move above first
-            robot_controller.move_robot(
-                rotation=euler_to_q(np.array([-180, 0, 180])),
-                pos=ord_in_base + np.array([0, 0, 0.4]),
-                v=0.05,
-                a=0.3)
-            # reset robot to grasp point
-            robot_controller.reset_robot()
-            # move robot to grasp point
-            robot_controller.move_grasp_position()
-            # wait for sometime
-            time.sleep(2)
-            # open gripper
-            gripper_controller.open_gripper()
-            # reset robot to grasp point
-            robot_controller.reset_robot()
+            # wait for confirm
+            confirm = input('Input y/n for grasp executing: ')
+            if confirm == 'y':
+                # move above first
+                robot_controller.move_robot(
+                    rotation=euler_to_q(np.array([-180, 0, 180])),
+                    pos=ord_in_base + np.array([0, 0, 0.4]),
+                    v=cfgs.robot_velo,
+                    a=0.3)
+                # move to grasp
+                robot_controller.move_robot(rotation=q_in_base,
+                                            pos=ord_in_base,
+                                            v=cfgs.robot_velo,
+                                            a=0.3)
+                # close gripper
+                gripper_controller.close_gripper()
+                # move above first
+                robot_controller.move_robot(
+                    rotation=euler_to_q(np.array([-180, 0, 180])),
+                    pos=ord_in_base + np.array([0, 0, 0.4]),
+                    v=cfgs.robot_velo,
+                    a=0.3)
+                # reset robot to grasp point
+                robot_controller.reset_robot(v=cfgs.robot_velo)
+                # move robot to grasp point
+                robot_controller.move_grasp_position(v=cfgs.robot_velo)
+                # wait for sometime
+                time.sleep(2)
+                # open gripper
+                gripper_controller.open_gripper()
+                # reset robot to grasp point
+                robot_controller.reset_robot(v=cfgs.robot_velo)
