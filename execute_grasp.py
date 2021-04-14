@@ -61,10 +61,6 @@ def parse_args():
                         type=int,
                         default=1,
                         help='grasp times, default: 1')
-    parser.add_argument('--robot_velo',
-                        type=float,
-                        default=0.2,
-                        help='robot move velocity, default: 0.2')
     cfgs = parser.parse_args()
     return cfgs
 
@@ -256,18 +252,11 @@ if __name__ == '__main__':
     if cfgs.move_robot is True:
         # start controller
         robot_controller = RobotController()
-        gripper_controller = GripperController()
-        # reset robot
-        robot_controller.reset_robot(v=cfgs.robot_velo)
-        # activate gripper
-        gripper_controller.activate_gripper()
-        # open gripper
-        gripper_controller.open_gripper()
 
     # grasp for several times
     for i in range(cfgs.times):
         # reset robot
-        robot_controller.reset_robot(v=cfgs.robot_velo)
+        robot_controller.move_home()
         # get grasps
         if cfgs.source == 'file':
             data_dir = 'GraspToolBox/doc/example_data'
@@ -325,31 +314,5 @@ if __name__ == '__main__':
             confirm = input('Input y/n for grasp executing: ')
             if confirm == 'y':
                 # move above first
-                robot_controller.move_robot(
-                    rotation=euler_to_q(np.array([-180, 0, 180])),
-                    pos=ord_in_base + np.array([0, 0, 0.4]),
-                    v=cfgs.robot_velo,
-                    a=0.3)
-                # move to grasp
-                robot_controller.move_robot(rotation=q_in_base,
-                                            pos=ord_in_base,
-                                            v=cfgs.robot_velo,
-                                            a=0.3)
-                # close gripper
-                gripper_controller.close_gripper()
-                # move above first
-                robot_controller.move_robot(
-                    rotation=euler_to_q(np.array([-180, 0, 180])),
-                    pos=ord_in_base + np.array([0, 0, 0.4]),
-                    v=cfgs.robot_velo,
-                    a=0.3)
-                # reset robot to grasp point
-                robot_controller.reset_robot(v=cfgs.robot_velo)
-                # move robot to grasp point
-                robot_controller.move_grasp_position(v=cfgs.robot_velo)
-                # wait for sometime
-                time.sleep(2)
-                # open gripper
-                gripper_controller.open_gripper()
-                # reset robot to grasp point
-                robot_controller.reset_robot(v=cfgs.robot_velo)
+                robot_controller.get_grasp(grasp_pos=ord_in_base,
+                                           grasp_rotation=q_in_base)
